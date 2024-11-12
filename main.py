@@ -29,22 +29,35 @@ def carregar_matriz_distancias(arquivo_csv):
 
     return matriz_distancias
 
-def objetivo_f1(variaveis, distancias):
+def fobj_1(xyh, d):
     dist_soma = 0
+    '''
+    Modelou-se as variáveis como uma matriz base x ativos de equipes atribuidas
+    Temos m bases e n ativos e s equipes
+    k = 0,1,2,3 indica qual das 3 equipes está alocada, se k=0, nenhuma equipe está alocada
+           i1 i2 ... in
+    xyh = [k  k  ... k ] b1
+          [k  k  ... k ] b2
+                 ...
+          [k  k  ... k ] bm
+
+    f1 = soma(i:1->n) soma(j:1->m) [ x_ij * d_ij ]
+    '''
+    
     for i in range(0, m):
         for j in range(0, n):
-            if(variaveis[i][j] != 0):
-                dist_soma +=  distancias[i][j]
+            if(xyh[i][j] != 0):
+                dist_soma +=  d[i][j]
 
     return dist_soma
 
 #[base][ativo] = distancia entre base e ativo
-distancias = carregar_matriz_distancias("probdata.csv")
+d = carregar_matriz_distancias("probdata.csv")
 
-m,n = distancias.shape #m bases e n ativos
+m,n = d.shape #m bases e n ativos
 s = 3 #equipes
 
-#matriz com as variaveis do problema
+#matriz com as variaveis de decisão do problema
 #[base][ativo] = equipe responsavel pelo ativo
 xyh = np.zeros((m, n), dtype=int) 
 
