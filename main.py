@@ -29,16 +29,23 @@ def carregar_matriz_distancias(arquivo_csv):
 
     return matriz_distancias
 
+def objetivo_f1(variaveis, distancias):
+    dist_soma = 0
+    for i in range(0, m):
+        for j in range(0, n):
+            if(variaveis[i][j] != 0):
+                dist_soma +=  distancias[i][j]
 
+    return dist_soma
+
+#[base][ativo] = distancia entre base e ativo
 distancias = carregar_matriz_distancias("probdata.csv")
-print(distancias[0][0])
 
-n = 125 #ativos
-m = 14 #bases
+m,n = distancias.shape #m bases e n ativos
 s = 3 #equipes
 
-xij = np.zeros(n, dtype=int)
-yjk = np.zeros(m, dtype=int)
-hik = np.zeros(n, dtype=int)
+#matriz com as variaveis do problema
+#[base][ativo] = equipe responsavel pelo ativo
+xyh = np.zeros((m, n), dtype=int) 
 
 
