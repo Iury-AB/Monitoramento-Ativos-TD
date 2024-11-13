@@ -44,16 +44,8 @@ def carregar_matriz_distancias(arquivo_csv):
         i = base_index[base_coord]
         j = ativo_index[ativo_coord]
         matriz_distancias[i, j] = distancia
-    
-    return matriz_distancias
 
-def probdef(arquivo_csv):
-    probdata = Struct()
-    probdata.d = carregar_matriz_distancias(arquivo_csv)
-    probdata.m,probdata.n = probdata.d.shape
-    probdata.s = 3
-    probdata.eta = 0.2
-    return probdata
+    return matriz_distancias
 
 '''
 Implementa a função objetivo do problema
@@ -83,6 +75,30 @@ def fobj_1(x, probdata):
     return x
 
 '''
+Define os dados de uma instância arbitrária do problema
+'''
+def probdef(s=3,eta=0.2):
+
+    # n: número de ativos
+    # m: número de bases
+    # s: número de equipes
+    # eta: percentual de responsabilidade das esquipes
+        
+   
+    distancias = carregar_matriz_distancias("probdata.csv")
+    
+    m,n = distancias.shape #m bases e n ativos
+   
+    probdata = Struct()
+    probdata.eta = eta
+    probdata.n = n
+    probdata.m = m
+    probdata.s = s
+    probdata.d = distancias
+        
+    return probdata
+
+'''
 Implementa uma solução inicial para o problema
 '''
 def sol_inicial(probdata,apply_constructive_heuristic=False):
@@ -96,7 +112,7 @@ def sol_inicial(probdata,apply_constructive_heuristic=False):
                           ...
                           bm                    ]
     ''' 
-    if not apply_constructive_heuristic:
+    if apply_constructive_heuristic == False:    
         # Constrói solução inicial aleatoriamente
         x = Struct()
         xyh = np.zeros((probdata.m,probdata.n), dtype=int) # cria uma matriz de elementos de mesma forma do arquivo csv atribuindo valores zero
@@ -110,14 +126,14 @@ def sol_inicial(probdata,apply_constructive_heuristic=False):
             elif (i == len(equipes_sorteadas) - 1):
                 xyh[bases_sorteadas[i],(i)*resp:probdata.n] = equipes_sorteadas[i] # Atribui à última equipe os últimoa ativos à base i
             else:
-                xyh[bases_sorteadas[i],i*resp:(i+1)*resp] = equipes_sorteadas[i] # Atribui os resp elementos seguintes da base 1 à equipe i
+                xyh[bases_sorteadas[i],i*resp:(i+1)*resp] = equipes_sorteadas[i] # Atribui os resp elementos seguintes da base i das bases sorteadas à equipe i
             
         x.solution = xyh
     
     else:
         ## Constrói solução inicial usando uma heurística construtiva
         x = Struct()
-        x.solution = np.zeros((probdata.n,probdata.m), dtype=int)
+        x.solution = np.zeros((n,m), dtype=int)
         job = np.argsort(probdata.d[:,4].corr(axis=1))    # ativos ordenadas de acordo com a correlaçao das distânciais
         for ativo in job[::-1]:        
             base = np.argmin(probdata.d[:,ativo]) # atribui as tarefas em ordem decrescente de variância ao agente de menor custo
@@ -144,22 +160,89 @@ Implementa a função shake
 '''
 def shake(x, k, probdata):
         
-    y = copy.deepcopy(x)
-    r = np.random.permutation(probdata.n)
+    y = copy.deepcopy(x)  
+        
+    if k == 1:             # troca os ativos entre equipe(s)
+        n= sample(range(0, probdata.n), 2) # sorteia 2 ativos para permutar
+        m= sample(range(0, probdata.m), 1) # sorteia 1 base onde sera feita a troca do ativo
+        while x.solution[m[0],n[0]]==0 and x.solution[m[0],n[0]]: # sorteia até encontar uma equipe com ativo
+            n= sample(range(0, probdata.n), 2)
+            m= sample(range(0, probdata.m), 1) 
+        y.solution[m[0],n[0]] = x.solution[m[0],n[1]]
+        y.solution[m[0],n[1]] = x.solution[m[0],n[0]]        
+    elif k == 2:           # exchange two random bases
+        m= sample(range(0, probdata.m), 2) # realocação de equipes entre duas bases
+        y.solution[m[0],:] = x.solution[m[1],:]
+        y.solution[m[1],:] = x.solution[m[0],:] 
     
-    if k == 1:             # exchange two random positions
-        y.solution[r[0]] = x.solution[r[1]]
-        y.solution[r[1]] = x.solution[r[0]]        
-    elif k == 2:           # exchange three random positions
-        y.solution[r[0]] = x.solution[r[1]]
-        y.solution[r[1]] = x.solution[r[2]]
-        y.solution[r[2]] = x.solution[r[0]]
-    elif k == 3:           # shift positions     
-        z = y.solution.pop(r[0])
-        y.solution.insert(r[1],z)
     
     return y
 
-probdata= probdef("probdata.csv")
+'''
+Implementa uma metaheurística RVNS
+'''
+
+# Contador do número de soluções candidatas avaliadas
+num_sol_avaliadas = 0
+
+# Máximo número de soluções candidatas avaliadas
+max_num_sol_avaliadas = 10000
+
+# Número de estruturas de vizinhanças definidas
+kmax = 3
+
+# Faz a leitura dos dados da instância do problema
+probdata = probdef()
+
+# Gera solução inicial
 x = sol_inicial(probdata)
-print(x.solution)
+
+# Avalia solução inicial
+x = fobj_1(x,probdata)
+num_sol_avaliadas += 1
+
+# Armazena dados para plot
+historico = Struct()
+historico.sol = []
+historico.fit = []
+historico.sol.append(x.solution)
+historico.fit.append(x.fitness)
+
+
+# Ciclo iterativo do método
+while num_sol_avaliadas < max_num_sol_avaliadas:
+    
+    k = 1
+    while k <= kmax:
+        
+        # Gera uma solução candidata na k-ésima vizinhança de x        
+        y = shake(x,k,probdata)
+        y = fobj_1(y,probdata)
+        num_sol_avaliadas += 1
+        
+        # Atualiza solução corrente e estrutura de vizinhança (se necessário)
+        x,k = neighborhoodChange(x,y,k)
+        
+        # Armazena dados para plot
+        historico.sol.append(x.solution)
+        historico.fit.append(x.fitness)
+
+
+print('\n--- SOLUÇÃO INICIAL CONSTRUÍDA ---\n')
+print('Sequência de tarefas atribuídas aos agentes:\n')
+print('x = {}\n'.format(historico.sol[0]))
+print('fitness(x) = {:.1f}\n'.format(historico.fit[0]))
+
+print('\n--- MELHOR SOLUÇÃO ENCONTRADA ---\n')
+print('Sequência de tarefas atribuídas aos agentes:\n')
+print('x = {}\n'.format(x.solution))
+print('fitness(x) = {:.1f}\n'.format(x.fitness))
+
+plt.figure()
+s = len(historico.fit)
+plt.plot(np.linspace(0,s-1,s),historico.fit,'k-')
+plt.title('Evolução da qualidade da solução');
+plt.xlabel('Número de avaliações');
+plt.ylabel('fitness(x)');
+plt.show()
+
