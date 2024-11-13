@@ -5,6 +5,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import copy
 import pandas as pd
+from random import sample
+import math
+
+np.set_printoptions(threshold=np.inf) # diretiva para imprimir todos os elementos de uma matriz
 
 '''
 Define um tipo de dado similar ao Pascal "record" or C "struct"
@@ -68,25 +72,17 @@ def fobj_1(xyh, d):
 '''
 Define os dados de uma instância arbitrária do problema
 '''
-def probdef(n=50):
+def probdef(s=3,eta=0.2):
 
     # n: número de ativos
     # m: número de bases
     # s: número de equipes
+    # eta: percentual de responsabilidade das esquipes
         
    
     distancias = carregar_matriz_distancias("probdata.csv")
-    print(distancias[0][0])
-
-    n = 125 #ativos
-    m = 4 #bases
-    s = 3 #equipes
-    eta = 0.2
     
-    xij = np.zeros(n, dtype=int)
-    yjk = np.zeros(m, dtype=int)
-    hik = np.zeros(n, dtype=int)
-
+    m,n = distancias.shape #m bases e n ativos
    
     probdata = Struct()
     probdata.eta = eta
@@ -100,27 +96,34 @@ def probdef(n=50):
 '''
 Implementa uma solução inicial para o problema
 '''
-def sol_inicial(probdata,apply_constructive_heuristic):
+def sol_inicial(probdata,apply_constructive_heuristic=False):
     
     '''
-    Matriz solução: e = [  b1 b2 ... bj ... bm
-                          a1
-                          a2
+    Matriz solução: xyh = [  a1 a2 ... ai ... an
+                          b1
+                          b2
                           ...
-                          ai
+                          bj
                           ...
-                          an                    ]
+                          bm                    ]
     ''' 
-    if apply_constructive_heuristic == False:        
+    if apply_constructive_heuristic == False:    
         # Constrói solução inicial aleatoriamente
         x = Struct()
-        e = np.zeros((n,m), dtype=int) # cria uma matriz de elementos de mesma forma do arquivo csv atribuindo valores zero
-        resp=np.ceil(probdata.eta*probdata.n/probdata.s) # Calcula a R6
-        e[0:resp,0]=1 # Atribui os resp elementos da base 0 à equipe 1
-        e[resp:2*resp,1]=2 # Atribui os resp elementos seguintes da base 1 à equipe 2
-        e[2*resp:n,2]=3 # Atribui os elementos restantes da base 2 à equipe 3
-                
-        x.solution = e
+        xyh = np.zeros((probdata.m,probdata.n), dtype=int) # cria uma matriz de elementos de mesma forma do arquivo csv atribuindo valores zero
+        resp=math.ceil(probdata.eta*probdata.n/probdata.s) # Calcula a R6
+        equipes_sorteadas = sample(range(1, probdata.s + 1), probdata.s) # sorteia aleatoriamente s equipes
+        bases_sorteadas = sample(range(0,probdata.m),probdata.s) # sorteia aleatoriamente s bases
+
+        for i,equipe in enumerate(equipes_sorteadas):
+            if (i == 0):
+                xyh[bases_sorteadas[i],i:resp] = equipes_sorteadas[i] # Atribui os resp elementos da base de índice 0 à equipe i
+            elif (i == len(equipes_sorteadas) - 1):
+                xyh[bases_sorteadas[i],(i)*resp:probdata.n] = equipes_sorteadas[i] # Atribui à última equipe os últimoa ativos à base i
+            else:
+                xyh[bases_sorteadas[i],i*resp:(i+1)*resp] = equipes_sorteadas[i] # Atribui os resp elementos seguintes da base 1 à equipe i
+            
+        x.solution = xyh
     
     else:
         ## Constrói solução inicial usando uma heurística construtiva
@@ -138,7 +141,9 @@ def sol_inicial(probdata,apply_constructive_heuristic):
 
 #[base][ativo] = distancia entre base e ativo
 d = carregar_matriz_distancias("probdata.csv")
-
+probdata= probdef(4)
+x = sol_inicial(probdata)
+print(x.solution)
 m,n = d.shape #m bases e n ativos
 s = 3 #equipes
 
