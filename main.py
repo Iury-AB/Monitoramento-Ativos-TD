@@ -96,7 +96,7 @@ def sol_inicial(probdata,apply_constructive_heuristic=False):
                           ...
                           bm                    ]
     ''' 
-    if apply_constructive_heuristic == False:    
+    if not apply_constructive_heuristic:
         # Constrói solução inicial aleatoriamente
         x = Struct()
         xyh = np.zeros((probdata.m,probdata.n), dtype=int) # cria uma matriz de elementos de mesma forma do arquivo csv atribuindo valores zero
@@ -159,3 +159,7 @@ def shake(x, k, probdata):
         y.solution.insert(r[1],z)
     
     return y
+
+probdata= probdef("probdata.csv")
+x = sol_inicial(probdata)
+print(x.solution)
