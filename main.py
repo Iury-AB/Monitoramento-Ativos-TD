@@ -47,7 +47,10 @@ def carregar_matriz_distancias(arquivo_csv):
 
     return matriz_distancias
 
-def fobj_1(xyh, d):
+'''
+Implementa a função objetivo do problema
+'''
+def fobj_1(x, probdata):
     dist_soma = 0
     '''
     Modelou-se as variáveis como uma matriz base x ativos de equipes atribuidas
@@ -61,13 +64,15 @@ def fobj_1(xyh, d):
 
     f1 = soma(i:1->n) soma(j:1->m) [ x_ij * d_ij ]
     '''
-    
-    for i in range(0, m):
-        for j in range(0, n):
+    xyh=x.solution
+    for i in range(0, probdata.m):
+        for j in range(0, probdata.n):
             if(xyh[i][j] != 0):
-                dist_soma +=  d[i][j]
+                dist_soma +=  probdata.d[i][j]
 
-    return dist_soma
+    x.fitness = dist_soma
+
+    return x
 
 '''
 Define os dados de uma instância arbitrária do problema
@@ -137,18 +142,105 @@ def sol_inicial(probdata,apply_constructive_heuristic=False):
     return x
 
 
+'''
+Implementa a função neighborhoodChange
+'''
+def neighborhoodChange(x, y, k):
+    
+    if y.fitness < x.fitness:
+        x = copy.deepcopy(y)
+        k = 1
+    else:
+        k += 1
+        
+    return x, k
 
+'''
+Implementa a função shake
+'''
+def shake(x, k, probdata):
+        
+    y = copy.deepcopy(x)
+    r = np.random.permutation(probdata.n)
+    
+    if k == 1:             # exchange two random positions
+        y.solution[r[0]] = x.solution[r[1]]
+        y.solution[r[1]] = x.solution[r[0]]        
+    elif k == 2:           # exchange three random positions
+        y.solution[r[0]] = x.solution[r[1]]
+        y.solution[r[1]] = x.solution[r[2]]
+        y.solution[r[2]] = x.solution[r[0]]
+    elif k == 3:           # shift positions     
+        z = y.solution.pop(r[0])
+        y.solution.insert(r[1],z)
+    
+    return y
 
-#[base][ativo] = distancia entre base e ativo
-d = carregar_matriz_distancias("probdata.csv")
-probdata= probdef(4)
+'''
+Implementa uma metaheurística RVNS
+'''
+
+# Contador do número de soluções candidatas avaliadas
+num_sol_avaliadas = 0
+
+# Máximo número de soluções candidatas avaliadas
+max_num_sol_avaliadas = 10000
+
+# Número de estruturas de vizinhanças definidas
+kmax = 3
+
+# Faz a leitura dos dados da instância do problema
+probdata = probdef()
+
+# Gera solução inicial
 x = sol_inicial(probdata)
-print(x.solution)
-m,n = d.shape #m bases e n ativos
-s = 3 #equipes
 
-#matriz com as variaveis de decisão do problema
-#[base][ativo] = equipe responsavel pelo ativo
-xyh = np.zeros((m, n), dtype=int) 
+# Avalia solução inicial
+x = fobj_1(x,probdata)
+num_sol_avaliadas += 1
 
+# Armazena dados para plot
+historico = Struct()
+historico.sol = []
+historico.fit = []
+historico.sol.append(x.solution)
+historico.fit.append(x.fitness)
+
+
+# Ciclo iterativo do método
+while num_sol_avaliadas < max_num_sol_avaliadas:
+    
+    k = 1
+    while k <= kmax:
+        
+        # Gera uma solução candidata na k-ésima vizinhança de x        
+        y = shake(x,k,probdata)
+        y = fobj(y,probdata)
+        num_sol_avaliadas += 1
+        
+        # Atualiza solução corrente e estrutura de vizinhança (se necessário)
+        x,k = neighborhoodChange(x,y,k)
+        
+        # Armazena dados para plot
+        historico.sol.append(x.solution)
+        historico.fit.append(x.fitness)
+
+
+print('\n--- SOLUÇÃO INICIAL CONSTRUÍDA ---\n')
+print('Sequência de tarefas atribuídas aos agentes:\n')
+print('x = {}\n'.format(historico.sol[0]))
+print('fitness(x) = {:.1f}\n'.format(historico.fit[0]))
+
+print('\n--- MELHOR SOLUÇÃO ENCONTRADA ---\n')
+print('Sequência de tarefas atribuídas aos agentes:\n')
+print('x = {}\n'.format(x.solution))
+print('fitness(x) = {:.1f}\n'.format(x.fitness))
+
+plt.figure()
+s = len(historico.fit)
+plt.plot(np.linspace(0,s-1,s),historico.fit,'k-')
+plt.title('Evolução da qualidade da solução');
+plt.xlabel('Número de avaliações');
+plt.ylabel('fitness(x)');
+plt.show()
 
