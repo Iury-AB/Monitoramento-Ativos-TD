@@ -1,5 +1,9 @@
 import numpy as np
 import pandas as pd
+import copy
+
+class Struct:
+    pass
 
 def carregar_matriz_distancias(arquivo_csv):
     # Ler o arquivo CSV sem cabeçalho
@@ -51,14 +55,27 @@ def fobj_1(xyh, d):
 
     return dist_soma
 
+def neighborhoodChange(x, y, k):
+    
+    if y.fitness < x.fitness:
+        x = copy.deepcopy(y)
+        k = 1
+    else:
+        k += 1
+        
+    return x, k
+
+
 #[base][ativo] = distancia entre base e ativo
 d = carregar_matriz_distancias("probdata.csv")
 
 m,n = d.shape #m bases e n ativos
 s = 3 #equipes
 
+#variavel da soluçao do problema, x_ij, y_jk e h_ik foram combinadas em uma matriz
+xyh = Struct()
 #matriz com as variaveis de decisão do problema
 #[base][ativo] = equipe responsavel pelo ativo
-xyh = np.zeros((m, n), dtype=int) 
+xyh.solution = np.zeros((m, n), dtype=int)
 
 
