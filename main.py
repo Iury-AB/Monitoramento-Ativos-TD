@@ -44,8 +44,16 @@ def carregar_matriz_distancias(arquivo_csv):
         i = base_index[base_coord]
         j = ativo_index[ativo_coord]
         matriz_distancias[i, j] = distancia
-
+    
     return matriz_distancias
+
+def probdef(arquivo_csv):
+    probdata = Struct()
+    probdata.d = carregar_matriz_distancias(arquivo_csv)
+    probdata.m,probdata.n = probdata.d.shape
+    probdata.s = 3
+    probdata.eta = 0.2
+    return probdata
 
 '''
 Implementa a função objetivo do problema
@@ -109,7 +117,7 @@ def sol_inicial(probdata,apply_constructive_heuristic=False):
     else:
         ## Constrói solução inicial usando uma heurística construtiva
         x = Struct()
-        x.solution = np.zeros((n,m), dtype=int)
+        x.solution = np.zeros((probdata.n,probdata.m), dtype=int)
         job = np.argsort(probdata.d[:,4].corr(axis=1))    # ativos ordenadas de acordo com a correlaçao das distânciais
         for ativo in job[::-1]:        
             base = np.argmin(probdata.d[:,ativo]) # atribui as tarefas em ordem decrescente de variância ao agente de menor custo
@@ -151,4 +159,3 @@ def shake(x, k, probdata):
         y.solution.insert(r[1],z)
     
     return y
-
