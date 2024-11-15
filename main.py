@@ -77,15 +77,16 @@ def fobj_1(x, probdata):
 '''
 Define os dados de uma instância arbitrária do problema
 '''
-def probdef(s=3,eta=0.2):
+def probdef(s=3,eta=0.2,csv="probdata.csv"):
 
     # n: número de ativos
     # m: número de bases
     # s: número de equipes
     # eta: percentual de responsabilidade das esquipes
+    # csv: caminho do arquivo contendo as coordenadas e distâncias.
         
    
-    distancias = carregar_matriz_distancias("probdata.csv")
+    distancias = carregar_matriz_distancias(csv)
     
     m,n = distancias.shape #m bases e n ativos
    
@@ -95,6 +96,7 @@ def probdef(s=3,eta=0.2):
     probdata.m = m
     probdata.s = s
     probdata.d = distancias
+    probdata.csv = csv
         
     return probdata
 
@@ -116,28 +118,55 @@ def sol_inicial(probdata,apply_constructive_heuristic=False):
         # Constrói solução inicial aleatoriamente
         x = Struct()
         xyh = np.zeros((probdata.m,probdata.n), dtype=int) # cria uma matriz de elementos de mesma forma do arquivo csv atribuindo valores zero
-        resp=math.ceil(probdata.eta*probdata.n/probdata.s) # Calcula a R6
+        min = math.ceil(probdata.eta*probdata.n/probdata.s) # Calcula a R6
+        media = math.floor(probdata.n/probdata.s)
+        sorteado = sample(range(min, media), 1)
+        resp = sorteado[0]
+        x.resp=resp
         equipes_sorteadas = sample(range(1, probdata.s + 1), probdata.s) # sorteia aleatoriamente s equipes
         bases_sorteadas = sample(range(0,probdata.m),probdata.s) # sorteia aleatoriamente s bases
+        x.equipes={} #dicionario que armazena as equipes e suas quantidades.
 
         for i,equipe in enumerate(equipes_sorteadas):
             if (i == 0):
                 xyh[bases_sorteadas[i],i:resp] = equipes_sorteadas[i] # Atribui os resp elementos da base de índice 0 à equipe i
+                x.equipes[equipes_sorteadas[i]] = resp - i + 1
             elif (i == len(equipes_sorteadas) - 1):
                 xyh[bases_sorteadas[i],(i)*resp:probdata.n] = equipes_sorteadas[i] # Atribui à última equipe os últimoa ativos à base i
+                x.equipes[equipes_sorteadas[i]] = probdata.n - (i)*resp + 1
             else:
                 xyh[bases_sorteadas[i],i*resp:(i+1)*resp] = equipes_sorteadas[i] # Atribui os resp elementos seguintes da base i das bases sorteadas à equipe i
+                x.equipes[equipes_sorteadas[i]] = resp + 1
             
         x.solution = xyh
     
     else:
         ## Constrói solução inicial usando uma heurística construtiva
         x = Struct()
-        x.solution = np.zeros((n,m), dtype=int)
-        job = np.argsort(probdata.d[:,4].corr(axis=1))    # ativos ordenadas de acordo com a correlaçao das distânciais
-        for ativo in job[::-1]:        
-            base = np.argmin(probdata.d[:,ativo]) # atribui as tarefas em ordem decrescente de variância ao agente de menor custo
-            x.solution.insert(base,ativo)
+        xyh = np.zeros((probdata.m,probdata.n), dtype=int)
+        media = math.floor(probdata.n/probdata.s)
+        resp = media
+        x.resp = resp
+        equipes_sorteadas = sample(range(1, probdata.s + 1), probdata.s) # sorteia aleatoriamente s equipes
+        #bases_sorteadas = sample(range(0,probdata.m),probdata.s) # sorteia aleatoriamente s bases
+        ativos = np.argsort(probdata.d.var(axis=0))    # ativos ordenadas de acordo com a correlaçao das distânciais
+        bases = np.argsort(probdata.d.var(axis=1))    # ativos ordenadas de acordo com a correlaçao das distânciais
+        bases_sorteadas= bases[0:probdata.s]
+        j = 0
+        i = 0
+        for ativo in ativos[::-1]:               
+
+            xyh[bases_sorteadas[i],ativo] = equipes_sorteadas[i] # Atribui os resp elementos seguintes da base i das bases sorteadas à equipe i
+            
+            j = j + 1
+
+            if i == 0 and j > resp:
+                i = i + 1
+            elif  j >  (probdata.s -1)*resp and i < len(equipes_sorteadas)-1: 
+                i = i + 1 
+
+        x.solution = xyh
+        
         
     return x
 
@@ -164,18 +193,33 @@ def shake(x, k, probdata):
         
     if k == 1:             # troca os ativos entre equipe(s)
         n= sample(range(0, probdata.n), 2) # sorteia 2 ativos para permutar
-        m= sample(range(0, probdata.m), 1) # sorteia 1 base onde sera feita a troca do ativo
-        while x.solution[m[0],n[0]]==0 and x.solution[m[0],n[0]]: # sorteia até encontar uma equipe com ativo
-            n= sample(range(0, probdata.n), 2)
-            m= sample(range(0, probdata.m), 1) 
-        y.solution[m[0],n[0]] = x.solution[m[0],n[1]]
-        y.solution[m[0],n[1]] = x.solution[m[0],n[0]]        
+        #print('antes')
+        #print(y.solution)
+        y.solution[:,n[0]] = x.solution[:,n[1]]
+        y.solution[:,n[1]] = x.solution[:,n[0]] 
+        #print('depois')
+        #print(y.solution)
     elif k == 2:           # exchange two random bases
         m= sample(range(0, probdata.m), 2) # realocação de equipes entre duas bases
+        #print('antes')
+        #print(y.solution)
         y.solution[m[0],:] = x.solution[m[1],:]
         y.solution[m[1],:] = x.solution[m[0],:] 
-    
-    
+        #print('depois')
+        #print(y.solution)
+    elif k == 3: # altera uma coluna e uma linha por vez
+        n= sample(range(0, probdata.n), 2)
+        m= sample(range(0, probdata.m), 2) 
+        while y.solution[m[0],n[0]] !=0 or y.solution[m[1],n[1]] != 0 :
+            n= sample(range(0, probdata.n), 2)
+            m= sample(range(0, probdata.m), 2) 
+
+        #if probdata.d[m[0]][n[0]] != probdata.d[m[1]][n[1]] :
+        y.solution[:,n[0]] = x.solution[:,n[1]]
+        y.solution[:,n[1]] = x.solution[:,n[0]] 
+        y.solution[m[0],:] = x.solution[m[1],:]
+        y.solution[m[1],:] = x.solution[m[0],:] 
+
     return y
 
 '''
@@ -195,7 +239,7 @@ kmax = 3
 probdata = probdef()
 
 # Gera solução inicial
-x = sol_inicial(probdata)
+x = sol_inicial(probdata, True)
 
 # Avalia solução inicial
 x = fobj_1(x,probdata)
