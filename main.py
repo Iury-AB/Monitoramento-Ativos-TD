@@ -77,8 +77,8 @@ def fobj_1(x, probdata):
 def fobj_2 (x, probdata):
     carga_eq = np.zeros(3)
     xyh = x.solution
-    for i in range(0,probdata.m):
-        for j in range(0,probdata.n):
+    for j in range(0,probdata.n):
+        for i in range(0,probdata.m):
             if(xyh[i][j] == 1):
                 carga_eq[0] += 1
                 break
@@ -318,6 +318,8 @@ print('\n--- MELHOR SOLUÇÃO ENCONTRADA ---\n')
 print('Sequência de tarefas atribuídas aos agentes:\n')
 print('x = {}\n'.format(x.solution))
 print('fitness(x) = {:.1f}\n'.format(x.fitness))
+print('Valor de f2 para a solucao:\n')
+print('f2={}.'.format(fobj_2(x,probdata)))
 
 plt.figure()
 s = len(historico.fit)
