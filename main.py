@@ -90,9 +90,11 @@ def fobj_2 (x, probdata):
             elif(xyh[i][j] == 3):
                 carga_eq[2] += 1
                 break
+
     carga_max = max(carga_eq)
     carga_min = min(carga_eq)
-    return carga_max - carga_min
+    x.fitness = carga_max - carga_min
+    return x
 
 '''
 Define os dados de uma instância arbitrária do problema
@@ -265,6 +267,7 @@ Implementa uma metaheurística RVNS
 
 # Contador do número de soluções candidatas avaliadas
 num_sol_avaliadas = 0
+num_sol2_avaliadas = 0
 
 # Máximo número de soluções candidatas avaliadas
 max_num_sol_avaliadas = 10000
@@ -277,10 +280,13 @@ probdata = probdef()
 
 # Gera solução inicial
 x = sol_inicial(probdata, True)
+x2 = sol_inicial(probdata, True)
 
 # Avalia solução inicial
 x = fobj_1(x,probdata)
+x2 = fobj_2(x2, probdata)
 num_sol_avaliadas += 1
+num_sol2_avaliadas += 1
 
 # Armazena dados para plot
 historico = Struct()
@@ -288,6 +294,12 @@ historico.sol = []
 historico.fit = []
 historico.sol.append(x.solution)
 historico.fit.append(x.fitness)
+
+historico2 = Struct()
+historico2.sol = []
+historico2.fit = []
+historico2.sol.append(x2.solution)
+historico2.fit.append(x2.fitness)
 
 
 # Ciclo iterativo do método
@@ -308,6 +320,22 @@ while num_sol_avaliadas < max_num_sol_avaliadas:
         historico.sol.append(x.solution)
         historico.fit.append(x.fitness)
 
+while num_sol2_avaliadas < max_num_sol_avaliadas:
+    
+    k = 1
+    while k <= kmax:
+        
+        # Gera uma solução candidata na k-ésima vizinhança de x        
+        y2 = shake(x2,k,probdata)
+        y2 = fobj_1(y2,probdata)
+        num_sol2_avaliadas += 1
+        
+        # Atualiza solução corrente e estrutura de vizinhança (se necessário)
+        x2,k = neighborhoodChange(x2,y2,k)
+        
+        # Armazena dados para plot
+        historico2.sol.append(x2.solution)
+        historico2.fit.append(x2.fitness)
 
 print('\n--- SOLUÇÃO INICIAL CONSTRUÍDA ---\n')
 print('Sequência de tarefas atribuídas aos agentes:\n')
@@ -325,6 +353,13 @@ plt.figure()
 s = len(historico.fit)
 plt.plot(np.linspace(0,s-1,s),historico.fit,'k-')
 plt.title('Evolução da qualidade da solução');
+plt.xlabel('Número de avaliações');
+plt.ylabel('fitness(x)');
+
+plt.figure()
+s2 = len(historico2.fit)
+plt.plot(np.linspace(0,s2-1,s2),historico2.fit,'k-')
+plt.title('Evolução da qualidade da solução 2');
 plt.xlabel('Número de avaliações');
 plt.ylabel('fitness(x)');
 plt.show()
