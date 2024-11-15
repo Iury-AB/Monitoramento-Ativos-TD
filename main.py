@@ -74,6 +74,10 @@ def fobj_1(x, probdata):
 
     return x
 
+def fobj_2 (x, probdata):
+    
+    return
+
 '''
 Define os dados de uma instância arbitrária do problema
 '''
@@ -125,15 +129,18 @@ def sol_inicial(probdata,apply_constructive_heuristic=False):
         x.resp=resp
         equipes_sorteadas = sample(range(1, probdata.s + 1), probdata.s) # sorteia aleatoriamente s equipes
         bases_sorteadas = sample(range(0,probdata.m),probdata.s) # sorteia aleatoriamente s bases
-        x.bases_ocupadas = set(bases_sorteadas)
+        x.equipes={} #dicionario que armazena as equipes e suas quantidades.
 
         for i,equipe in enumerate(equipes_sorteadas):
             if (i == 0):
                 xyh[bases_sorteadas[i],i:resp] = equipes_sorteadas[i] # Atribui os resp elementos da base de índice 0 à equipe i
+                x.equipes[equipes_sorteadas[i]] = resp - i + 1
             elif (i == len(equipes_sorteadas) - 1):
                 xyh[bases_sorteadas[i],(i)*resp:probdata.n] = equipes_sorteadas[i] # Atribui à última equipe os últimoa ativos à base i
+                x.equipes[equipes_sorteadas[i]] = probdata.n - (i)*resp + 1
             else:
                 xyh[bases_sorteadas[i],i*resp:(i+1)*resp] = equipes_sorteadas[i] # Atribui os resp elementos seguintes da base i das bases sorteadas à equipe i
+                x.equipes[equipes_sorteadas[i]] = resp + 1
             
         x.solution = xyh
     
@@ -148,19 +155,18 @@ def sol_inicial(probdata,apply_constructive_heuristic=False):
         #bases_sorteadas = sample(range(0,probdata.m),probdata.s) # sorteia aleatoriamente s bases
         ativos = np.argsort(probdata.d.var(axis=0))    # ativos ordenadas de acordo com a correlaçao das distânciais
         bases = np.argsort(probdata.d.var(axis=1))    # ativos ordenadas de acordo com a correlaçao das distânciais
-        bases_sorteadas = bases[0:probdata.s]
-        x.bases_ocupadas = set(bases_sorteadas)
-
+        bases_sorteadas= bases[0:probdata.s]
         j = 0
         i = 0
-
         for ativo in ativos[::-1]:               
 
             xyh[bases_sorteadas[i],ativo] = equipes_sorteadas[i] # Atribui os resp elementos seguintes da base i das bases sorteadas à equipe i
             
             j = j + 1
 
-            if (i == 0 and j > resp) or (j >  (probdata.s -1)*resp and i < len(equipes_sorteadas)-1):
+            if i == 0 and j > resp:
+                i = i + 1
+            elif  j >  (probdata.s -1)*resp and i < len(equipes_sorteadas)-1: 
                 i = i + 1 
 
         x.solution = xyh
@@ -182,38 +188,6 @@ def neighborhoodChange(x, y, k):
         
     return x, k
 
-def troque_coluna(x, y, probdata):
-    n= sample(range(0, probdata.n), 2) # sorteia 2 ativos para permutar
-    y.solution[:,n[0]] = x.solution[:,n[1]]
-    y.solution[:,n[1]] = x.solution[:,n[0]] 
-    #print(x.solution)
-    #print(y.solution)
-    #print('mudança')
-
-    return y
-
-def troque_linha (x, y, probdata):
-    m= sample(range(0, probdata.m), 2) # realocação de equipes entre duas bases
-    while y.bases_ocupadas.isdisjoint(m) or y.bases_ocupadas.issuperset(m):
-        m= sample(range(0, probdata.m), 2)
-
-    y.solution[m[0],:] = x.solution[m[1],:]
-    y.solution[m[1],:] = x.solution[m[0],:]
-    #print(x.solution)
-    #print(y.solution)
-    #print('mudança')
-        
-    intersecao = y.bases_ocupadas.intersection(m)
-        
-
-    if len(intersecao) == 1 :
-        diff = y.bases_ocupadas.difference(m)
-        m.remove(list(intersecao)[0])            
-        uniao = diff.union(set(m))
-        y.bases_ocupadas.clear()
-        y.bases_ocupadas = uniao
-    return y
-
 '''
 Implementa a função shake
 '''
@@ -221,21 +195,34 @@ def shake(x, k, probdata):
         
     y = copy.deepcopy(x)  
         
-    if k == 1:             # Pode ou não alterar aleatoriamente atvios entre equipes
-        y = troque_coluna(x,y, probdata)       
+    if k == 1:             # troca os ativos entre equipe(s)
+        n= sample(range(0, probdata.n), 2) # sorteia 2 ativos para permutar
+        #print('antes')
+        #print(y.solution)
+        y.solution[:,n[0]] = x.solution[:,n[1]]
+        y.solution[:,n[1]] = x.solution[:,n[0]] 
+        #print('depois')
+        #print(y.solution)
+    elif k == 2:           # exchange two random bases
+        m= sample(range(0, probdata.m), 2) # realocação de equipes entre duas bases
+        #print('antes')
+        #print(y.solution)
+        y.solution[m[0],:] = x.solution[m[1],:]
+        y.solution[m[1],:] = x.solution[m[0],:] 
+        #print('depois')
+        #print(y.solution)
+    elif k == 3: # altera uma coluna e uma linha por vez
+        n= sample(range(0, probdata.n), 2)
+        m= sample(range(0, probdata.m), 2) 
+        while y.solution[m[0],n[0]] !=0 or y.solution[m[1],n[1]] != 0 :
+            n= sample(range(0, probdata.n), 2)
+            m= sample(range(0, probdata.m), 2) 
 
-    elif k == 2:           # altera aleatoriamente até duas equipes de bases
-        y = troque_linha(x, y, probdata)        
-        
-    elif k == 3: # altera aleatoriamente uma equipe de ativo e base
-        z = troque_linha(x, y, probdata)
-        y = copy.deepcopy(z)
-        y = troque_coluna(z, y, probdata)
-    elif k == 4: # poe 2 equipes na mesma base
-        pass
-    elif k == 5: # remove 2 equipe da mesma base
-        pass
-
+        #if probdata.d[m[0]][n[0]] != probdata.d[m[1]][n[1]] :
+        y.solution[:,n[0]] = x.solution[:,n[1]]
+        y.solution[:,n[1]] = x.solution[:,n[0]] 
+        y.solution[m[0],:] = x.solution[m[1],:]
+        y.solution[m[1],:] = x.solution[m[0],:] 
 
     return y
 
