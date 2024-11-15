@@ -352,15 +352,15 @@ print('f2={}.'.format(fobj_2(x,probdata)))
 plt.figure()
 s = len(historico.fit)
 plt.plot(np.linspace(0,s-1,s),historico.fit,'k-')
-plt.title('Evolução da qualidade da solução');
-plt.xlabel('Número de avaliações');
-plt.ylabel('fitness(x)');
+plt.title('Evolução da qualidade da solução')
+plt.xlabel('Número de avaliações')
+plt.ylabel('fitness(x)')
 
 plt.figure()
 s2 = len(historico2.fit)
 plt.plot(np.linspace(0,s2-1,s2),historico2.fit,'k-')
-plt.title('Evolução da qualidade da solução 2');
-plt.xlabel('Número de avaliações');
-plt.ylabel('fitness(x)');
+plt.title('Evolução da qualidade da solução 2')
+plt.xlabel('Número de avaliações')
+plt.ylabel('fitness(x)')
 plt.show()
 
