@@ -74,6 +74,26 @@ def fobj_1(x, probdata):
 
     return x
 
+def fobj_2 (x, probdata):
+    carga_eq = np.zeros(3)
+    xyh = x.solution
+    for i in range(0,probdata.m):
+        for j in range(0,probdata.n):
+            if(xyh[i][j] == 1):
+                carga_eq[0] += 1
+                break
+
+            elif(xyh[i][j] == 2):
+                carga_eq[1] += 1
+                break
+
+            elif(xyh[i][j] == 3):
+                carga_eq[2] += 1
+                break
+    carga_max = max(carga_eq)
+    carga_min = min(carga_eq)
+    return carga_max - carga_min
+
 '''
 Define os dados de uma instância arbitrária do problema
 '''
