@@ -201,8 +201,10 @@ def neighborhoodChange(x, y, k):
     if y.fitness < x.fitness:
         x = copy.deepcopy(y)
         k = 1
+        print("volta pra primeira vizinhanca\n")
     else:
         k += 1
+        print("proxima vizinhanca\n")
         
     return x, k
 
@@ -273,7 +275,7 @@ def shake(x, k, probdata):
 def vizinhanca(x, k, i):
         
     y = copy.deepcopy(x)
-        
+    
     if k == 1:             # Pode ou não alterar aleatoriamente atvios entre equipes
         dupla = combinacao_ativo[i]
         y.solution[:,dupla[0]] = x.solution[:,dupla[1]]
@@ -317,12 +319,17 @@ def firstImprovement(x, obj, k, probdata):
     while (True):
         y=x
         i = 0
-        while ((obj(x, probdata).fitness > obj(y, probdata).fitness) or i == tam_k):
-            i += 1
+        while ((x.fitness >= y.fitness) and i != tam_k):
             xi = vizinhanca(x, k, i)
-            x = xi if (obj(xi) < obj(x)) else x
+            xi = obj(xi, probdata)
+            x = xi if (xi.fitness < x.fitness) else x
+            i += 1
+            print("{}".format(x.fitness))
+            print("{}\n".format(i))
+        print("um valor melhor foi encontrado\n")   
 
-        if(obj(x, probdata).fitness >= obj(y, probdata).fitness):
+        if(x.fitness >= y.fitness):
+            print("terminou\n")
             break
     return x
 
