@@ -263,16 +263,8 @@ def shake(x, k, probdata):
 
     elif k == 2:           # altera aleatoriamente até duas equipes de bases
         y = troque_linha(x, y, probdata)        
-        
-    elif k == 3: # altera aleatoriamente uma equipe de ativo e base
-        z = troque_linha(x, y, probdata)
-        y = copy.deepcopy(z)
-        y = troque_coluna(z, y, probdata)
-    elif k == 4: # poe 2 equipes na mesma base
-        pass
-    elif k == 5: # remove 2 equipe da mesma base
-        pass
-    elif k == 6:
+
+    elif k == 3:
         i_n0 = 0
         i_n1 = 0
         achou = False
@@ -293,6 +285,11 @@ def shake(x, k, probdata):
                         y.solution[i_n0,n[1]] = x.solution[i_n0,n[0]]
                         y.solution[i_n1,n[1]] = 0
 
+    '''elif k == 4: # altera aleatoriamente uma equipe de ativo e base
+        z = troque_linha(x, y, probdata)
+        y = copy.deepcopy(z)
+        y = troque_coluna(z, y, probdata)'''
+
 
     return y
 
@@ -309,26 +306,8 @@ def vizinhanca(x, k, i):
         dupla = combinacao_base[i]
         y.solution[dupla[0],:] = x.solution[dupla[1],:]
         y.solution[dupla[1],:] = x.solution[dupla[0],:]
-        
-    elif k == 3: # altera aleatoriamente uma equipe de ativo e base
-        return y
-        dupla = combinacao_ativo_base[i]
-        # Troca linhas diretamente
-        y.solution[dupla[1][0], :], y.solution[dupla[1][1], :] = (
-            y.solution[dupla[1][1], :].copy(),
-            y.solution[dupla[1][0], :].copy(),
-        )
 
-        # Troca colunas diretamente
-        y.solution[:, dupla[0][0]], y.solution[:, dupla[0][1]] = (
-            y.solution[:, dupla[0][1]].copy(),
-            y.solution[:, dupla[0][0]].copy(),
-        )
-    elif k == 4: # poe 2 equipes na mesma base
-        pass
-    elif k == 5: # remove 2 equipe da mesma base
-        pass
-    elif k == 6:
+    elif k == 3:
         i_n0 = 0
         i_n1 = 0
         achou = False
@@ -347,6 +326,21 @@ def vizinhanca(x, k, i):
                         achou=True
                         y.solution[i_n0,dupla[1]] = x.solution[i_n0,dupla[0]]
                         y.solution[i_n1,dupla[1]] = 0
+    '''
+    elif k == 3: # altera aleatoriamente uma equipe de ativo e base
+        dupla = combinacao_ativo_base[i]
+        # Troca linhas diretamente
+        y.solution[dupla[1][0], :], y.solution[dupla[1][1], :] = (
+            y.solution[dupla[1][1], :].copy(),
+            y.solution[dupla[1][0], :].copy(),
+        )
+
+        # Troca colunas diretamente
+        y.solution[:, dupla[0][0]], y.solution[:, dupla[0][1]] = (
+            y.solution[:, dupla[0][1]].copy(),
+            y.solution[:, dupla[0][0]].copy(),
+        )
+    '''
 
     return y
 
@@ -357,20 +351,23 @@ def firstImprovement(x, obj, k, probdata):
     elif k == 2:
         tam_k = len(combinacao_base)
     elif k == 3:
-        return x
-    elif k == 6:
         tam_k = len(combinacao_ativo)
 
     while (True):
         y=x
         i = 0
-        while ((x.fitness >= y.fitness) and i != tam_k):
-            xi = vizinhanca(x, k, i)
+        vizinhos = []
+        for j in range(10):
+            v = sample(range(tam_k), 1)
+            vizinhos.append(shake(x, k, probdata))
+
+        while ((x.fitness >= y.fitness) and i != 10):
+            xi = vizinhos[i]
             xi = obj(xi, probdata)
             x = xi if (xi.fitness < x.fitness) else x
-            i += 1 
-            #print("{}\n".format(i))
-            #print("{}\n".format(x.fitness))
+            i += 1
+            print("{}\n".format(i))
+            print("{}\n".format(x.fitness))
 
         if(x.fitness >= y.fitness):
             print("{}".format(x.fitness))
