@@ -8,6 +8,7 @@ import pandas as pd
 from random import sample
 import math
 from itertools import combinations
+from plot import plot_melhor_solucao
 
 
 np.set_printoptions(threshold=np.inf) # diretiva para imprimir todos os elementos de uma matriz
@@ -268,6 +269,26 @@ def shake(x, k, probdata):
         pass
     elif k == 5: # remove 2 equipe da mesma base
         pass
+    elif k == 6:
+        i_n0 = 0
+        i_n1 = 0
+        achou = False
+        while not achou:
+            n = sample(range(0,probdata.n),2)
+            for i,base in enumerate(x.bases_ocupadas):
+                if x.solution[base,n[0]]!=0 :
+                    i_n0 = base
+                  
+
+                if x.solution[base,n[1]]!=0:
+                    i_n1 = base
+
+                if x.solution[i_n0,n[0]] != x.solution[i_n1,n[1]] and x.solution[i_n0,n[0]] !=0 and x.solution[i_n1,n[1]] !=0 :
+                    n0_carga = np.where(x.solution[i_n1]!=0)[0]
+                    if len(n0_carga) > x.resp - 1:
+                        achou=True
+                        y.solution[i_n0,n[1]] = x.solution[i_n0,n[0]]
+                        y.solution[i_n1,n[1]] = 0
 
 
     return y
@@ -323,13 +344,9 @@ def firstImprovement(x, obj, k, probdata):
             xi = vizinhanca(x, k, i)
             xi = obj(xi, probdata)
             x = xi if (xi.fitness < x.fitness) else x
-            i += 1
-            print("{}".format(x.fitness))
-            print("{}\n".format(i))
-        print("um valor melhor foi encontrado\n")   
+            i += 1 
 
         if(x.fitness >= y.fitness):
-            print("terminou\n")
             break
     return x
 
@@ -438,5 +455,6 @@ plt.plot(np.linspace(0,s2-1,s2),historico2.fit,'k-')
 plt.title('Evolução da qualidade da solução 2')
 plt.xlabel('Número de avaliações')
 plt.ylabel('fitness(x)')
+plot_melhor_solucao(probdata,x.solution)
 plt.show()
 
