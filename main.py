@@ -205,8 +205,10 @@ def neighborhoodChange(x, y, k):
     if y.fitness < x.fitness:
         x = copy.deepcopy(y)
         k = 1
+        print("vizinhanca {}".format(k))
     else:
         k += 1
+        print("vizinhanca {}".format(k))
         
     return x, k
 
@@ -262,7 +264,15 @@ def shake(x, k, probdata):
     elif k == 2:           # altera aleatoriamente até duas equipes de bases
         y = troque_linha(x, y, probdata)        
         
-    elif k == 3:
+    elif k == 3: # altera aleatoriamente uma equipe de ativo e base
+        z = troque_linha(x, y, probdata)
+        y = copy.deepcopy(z)
+        y = troque_coluna(z, y, probdata)
+    elif k == 4: # poe 2 equipes na mesma base
+        pass
+    elif k == 5: # remove 2 equipe da mesma base
+        pass
+    elif k == 6:
         i_n0 = 0
         i_n1 = 0
         achou = False
@@ -282,10 +292,6 @@ def shake(x, k, probdata):
                         achou=True
                         y.solution[i_n0,n[1]] = x.solution[i_n0,n[0]]
                         y.solution[i_n1,n[1]] = 0
-    elif k == 4: # altera aleatoriamente uma equipe de ativo e base
-        z = troque_linha(x, y, probdata)
-        y = copy.deepcopy(z)
-        y = troque_coluna(z, y, probdata)
 
 
     return y
@@ -303,8 +309,26 @@ def vizinhanca(x, k, i):
         dupla = combinacao_base[i]
         y.solution[dupla[0],:] = x.solution[dupla[1],:]
         y.solution[dupla[1],:] = x.solution[dupla[0],:]
-             
-    elif k == 3:
+        
+    elif k == 3: # altera aleatoriamente uma equipe de ativo e base
+        return y
+        dupla = combinacao_ativo_base[i]
+        # Troca linhas diretamente
+        y.solution[dupla[1][0], :], y.solution[dupla[1][1], :] = (
+            y.solution[dupla[1][1], :].copy(),
+            y.solution[dupla[1][0], :].copy(),
+        )
+
+        # Troca colunas diretamente
+        y.solution[:, dupla[0][0]], y.solution[:, dupla[0][1]] = (
+            y.solution[:, dupla[0][1]].copy(),
+            y.solution[:, dupla[0][0]].copy(),
+        )
+    elif k == 4: # poe 2 equipes na mesma base
+        pass
+    elif k == 5: # remove 2 equipe da mesma base
+        pass
+    elif k == 6:
         i_n0 = 0
         i_n1 = 0
         achou = False
@@ -333,6 +357,8 @@ def firstImprovement(x, obj, k, probdata):
     elif k == 2:
         tam_k = len(combinacao_base)
     elif k == 3:
+        return x
+    elif k == 6:
         tam_k = len(combinacao_ativo)
 
     while (True):
@@ -347,7 +373,7 @@ def firstImprovement(x, obj, k, probdata):
             #print("{}\n".format(x.fitness))
 
         if(x.fitness >= y.fitness):
-            #print("{}".format(x.fitness))
+            print("{}".format(x.fitness))
             break
     return x
 
@@ -392,7 +418,7 @@ historico2.sol.append(x2.solution)
 historico2.fit.append(x2.fitness)
 
 tempo_inicio = time.time()
-tempo_timite = 60
+tempo_timite = 30
 
 # Ciclo iterativo do método
 while True:
