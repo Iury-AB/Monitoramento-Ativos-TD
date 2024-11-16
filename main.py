@@ -205,10 +205,8 @@ def neighborhoodChange(x, y, k):
     if y.fitness < x.fitness:
         x = copy.deepcopy(y)
         k = 1
-        print("vizinhanca {}".format(k))
     else:
         k += 1
-        print("vizinhanca {}".format(k))
         
     return x, k
 
@@ -254,17 +252,24 @@ for ativo in combinacao_ativo:
     for base in combinacao_base:
         combinacao_ativo_base.append((ativo, base))
 
+
 def shake(x, k, probdata):
         
     y = copy.deepcopy(x)  
         
-    if k == 1:             # Pode ou não alterar aleatoriamente atvios entre equipes
-        y = troque_coluna(x,y, probdata) 
+    if k == 1:             # Pode ou não alterar aleatoriamente ativos entre equipes
+        y = troque_coluna(x,y, probdata)       
 
     elif k == 2:           # altera aleatoriamente até duas equipes de bases
         y = troque_linha(x, y, probdata)        
+        
+    elif k == 3: # altera aleatoriamente uma equipe de ativo e base
+        z = troque_linha(x, y, probdata)
+        y = copy.deepcopy(z)
+        y = troque_coluna(z, y, probdata)
 
-    elif k == 3:
+    elif k == 4: # alterna ativo de equipe
+
         i_n0 = 0
         i_n1 = 0
         achou = False
@@ -284,14 +289,11 @@ def shake(x, k, probdata):
                         achou=True
                         y.solution[i_n0,n[1]] = x.solution[i_n0,n[0]]
                         y.solution[i_n1,n[1]] = 0
-
-    '''elif k == 4: # altera aleatoriamente uma equipe de ativo e base
-        z = troque_linha(x, y, probdata)
-        y = copy.deepcopy(z)
-        y = troque_coluna(z, y, probdata)'''
-
+                    
 
     return y
+
+
 
 def vizinhanca(x, k, i):
         
@@ -345,20 +347,12 @@ def vizinhanca(x, k, i):
     return y
 
 def firstImprovement(x, obj, k, probdata):
-    tam_k = 0
-    if k == 1:
-        tam_k = len(combinacao_ativo)
-    elif k == 2:
-        tam_k = len(combinacao_base)
-    elif k == 3:
-        tam_k = len(combinacao_ativo)
 
     while (True):
         y=x
         i = 0
         vizinhos = []
         for j in range(10):
-            v = sample(range(tam_k), 1)
             vizinhos.append(shake(x, k, probdata))
 
         while ((x.fitness >= y.fitness) and i != 10):
@@ -366,11 +360,8 @@ def firstImprovement(x, obj, k, probdata):
             xi = obj(xi, probdata)
             x = xi if (xi.fitness < x.fitness) else x
             i += 1
-            print("{}\n".format(i))
-            print("{}\n".format(x.fitness))
 
         if(x.fitness >= y.fitness):
-            print("{}".format(x.fitness))
             break
     return x
 
@@ -386,7 +377,7 @@ num_sol2_avaliadas = 0
 max_num_sol_avaliadas = 10000
 
 # Número de estruturas de vizinhanças definidas
-kmax = 3
+kmax = 4
 
 # Faz a leitura dos dados da instância do problema
 probdata = probdef()
