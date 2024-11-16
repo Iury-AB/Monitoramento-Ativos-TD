@@ -7,6 +7,8 @@ import copy
 import pandas as pd
 from random import sample
 import math
+from itertools import combinations
+
 
 np.set_printoptions(threshold=np.inf) # diretiva para imprimir todos os elementos de uma matriz
 
@@ -204,27 +206,28 @@ def neighborhoodChange(x, y, k):
         
     return x, k
 
-def troque_coluna(x, y, probdata):
-    n= sample(range(0, probdata.n), 2) # sorteia 2 ativos para permutar
-    y.solution[:,n[0]] = x.solution[:,n[1]]
-    y.solution[:,n[1]] = x.solution[:,n[0]] 
+def troque_coluna(x, y, probdata, dupla):
+    y.solution[:,dupla[0]] = x.solution[:,dupla[1]]
+    y.solution[:,dupla[1]] = x.solution[:,dupla[0]] 
     #print(x.solution)
     #print(y.solution)
     #print('mudança')
 
     return y
 
-def troque_linha (x, y, probdata):
+def troque_linha (x, y, probdata, dupla):
+    '''
     m= sample(range(0, probdata.m), 2) # realocação de equipes entre duas bases
     while y.bases_ocupadas.isdisjoint(m) or y.bases_ocupadas.issuperset(m):
         m= sample(range(0, probdata.m), 2)
-
-    y.solution[m[0],:] = x.solution[m[1],:]
-    y.solution[m[1],:] = x.solution[m[0],:]
+    '''
+    
+    y.solution[dupla[0],:] = x.solution[dupla[1],:]
+    y.solution[dupla[1],:] = x.solution[dupla[0],:]
     #print(x.solution)
     #print(y.solution)
     #print('mudança')
-        
+    '''
     intersecao = y.bases_ocupadas.intersection(m)
         
 
@@ -234,25 +237,42 @@ def troque_linha (x, y, probdata):
         uniao = diff.union(set(m))
         y.bases_ocupadas.clear()
         y.bases_ocupadas = uniao
+    '''
+    
     return y
 
 '''
 Implementa a função shake
 '''
-def shake(x, k, probdata):
+combinacao_ativo = list(combinations(range(125), 2))
+combinacao_base = list(combinations(range(14), 2))
+combinacao_ativo_base = []
+for ativo in combinacao_ativo:
+    for base in combinacao_base:
+        combinacao_ativo_base.append((ativo, base))
+
+def shake(x, k, probdata, i):
         
-    y = copy.deepcopy(x)  
+    y = copy.deepcopy(x)
         
     if k == 1:             # Pode ou não alterar aleatoriamente atvios entre equipes
-        y = troque_coluna(x,y, probdata)       
+        if(i < 0):
+            i = sample(range(len(combinacao_ativo)), 1)[0]
+        dupla = combinacao_ativo[i]
+        y = troque_coluna(x,y, probdata, dupla)
 
     elif k == 2:           # altera aleatoriamente até duas equipes de bases
-        y = troque_linha(x, y, probdata)        
+        if(i < 0):
+            i = sample(range(len(combinacao_base)), 1)[0]
+        dupla = combinacao_base[i]
+        y = troque_linha(x, y, probdata, dupla)
         
     elif k == 3: # altera aleatoriamente uma equipe de ativo e base
-        z = troque_linha(x, y, probdata)
+        if(i < 0):
+            i = sample(range(len(combinacao_ativo_base)), 1)[0]
+        z = troque_linha(x, y, probdata, combinacao_ativo_base[i][1])
         y = copy.deepcopy(z)
-        y = troque_coluna(z, y, probdata)
+        y = troque_coluna(z, y, probdata, combinacao_ativo_base[i][0])
     elif k == 4: # poe 2 equipes na mesma base
         pass
     elif k == 5: # remove 2 equipe da mesma base
@@ -260,6 +280,27 @@ def shake(x, k, probdata):
 
 
     return y
+
+def firstImprovement(x, obj, k, probdata):
+    tam_k = 0
+    if k == 1:
+        tam_k = len(combinacao_ativo)
+    elif k == 2:
+        tam_k = len(combinacao_base)
+    elif k == 3:
+        tam_k = len(combinacao_ativo_base)
+
+    while (True):
+        y=x
+        i = 0
+        while ((obj(x, probdata).fitness > obj(y, probdata).fitness) or i == tam_k):
+            i += 1
+            xi = shake(x, k, probdata, i)
+            x = xi if (obj(xi) < obj(x)) else x
+
+        if(obj(x, probdata).fitness >= obj(y, probdata).fitness):
+            break
+    return x
 
 '''
 Implementa uma metaheurística RVNS
@@ -308,9 +349,11 @@ while num_sol_avaliadas < max_num_sol_avaliadas:
     k = 1
     while k <= kmax:
         
-        # Gera uma solução candidata na k-ésima vizinhança de x        
-        y = shake(x,k,probdata)
+        # Gera uma solução candidata na k-ésima vizinhança de x
+        y = shake(x,k,probdata, -1)
         y = fobj_1(y,probdata)
+        z = firstImprovement(y, fobj_1, k, probdata)
+        z = fobj_1(z, probdata)
         num_sol_avaliadas += 1
         
         # Atualiza solução corrente e estrutura de vizinhança (se necessário)
@@ -326,7 +369,7 @@ while num_sol2_avaliadas < max_num_sol_avaliadas:
     while k <= kmax:
         
         # Gera uma solução candidata na k-ésima vizinhança de x        
-        y2 = shake(x2,k,probdata)
+        y2 = shake(x2,k,probdata, -1)
         y2 = fobj_1(y2,probdata)
         num_sol2_avaliadas += 1
         
