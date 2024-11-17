@@ -499,29 +499,29 @@ print('\n--- MELHOR SOLUÇÃO GLOBAL ENCONTRADA para f2 ---\n')
 print(f'fitness f2(x) = {melhor_fitness_global2:.1f}\n')
 
 # Plot das curvas de convergência
-conv_f1 = plt.figure()
 max_avaliacoes = max(len(historico.fit) for historico in historicos1)
 avaliacoes = np.linspace(0, max_avaliacoes - 1, max_avaliacoes)
+
 for execucao, historico in enumerate(historicos1):
-    s = len(historico.fit)
     plt.plot(avaliacoes, historico.fit, label=f'Execução {execucao + 1}')
 plt.title('Evolução da qualidade da solução')
 plt.xlabel('Número de avaliações')
 plt.ylabel('fitness(x)')
 plt.legend()
+plt.show()
+plt.close()
 
-conv_f2 = plt.figure()
 max_avaliacoes = max(len(historico.fit) for historico in historicos2)
 avaliacoes = np.linspace(0, max_avaliacoes - 1, max_avaliacoes)
 for execucao, historico in enumerate(historicos2):
     plt.plot(avaliacoes, historico.fit, label=f'Execução {execucao + 1}')
-    
+
 plt.title('Evolução da qualidade da solução')
 plt.xlabel('Número de avaliações')
 plt.ylabel('fitness(x)')
 plt.legend()
-conv_f1.show()
-conv_f2.show()
+plt.show()
+plt.close()
 
 # Plota a melhor solução global
 plot_melhor_solucao(probdata, melhor_solucao_global1)
