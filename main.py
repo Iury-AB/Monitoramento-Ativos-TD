@@ -352,10 +352,11 @@ def firstImprovement(x, obj, k, probdata):
         y=x
         i = 0
         vizinhos = []
-        for j in range(10):
+        n_viz = 40
+        for j in range(n_viz):
             vizinhos.append(shake(x, k, probdata))
 
-        while ((x.fitness >= y.fitness) and i != 10):
+        while ((x.fitness >= y.fitness) and i != n_viz):
             xi = vizinhos[i]
             xi = obj(xi, probdata)
             x = xi if (xi.fitness < x.fitness) else x
@@ -382,13 +383,7 @@ kmax = 4
 # Faz a leitura dos dados da instância do problema
 probdata = probdef()
 
-# Gera solução inicial
-x = sol_inicial(probdata, True)
-x2 = sol_inicial(probdata, True)
 
-# Avalia solução inicial
-x = fobj_1(x,probdata)
-x2 = fobj_2(x2, probdata)
 num_sol_avaliadas += 1
 num_sol2_avaliadas += 1
 
@@ -396,89 +391,138 @@ num_sol2_avaliadas += 1
 historico = Struct()
 historico.sol = []
 historico.fit = []
-historico.sol.append(x.solution)
-historico.fit.append(x.fitness)
+
 
 historico2 = Struct()
 historico2.sol = []
 historico2.fit = []
-historico2.sol.append(x2.solution)
-historico2.fit.append(x2.fitness)
 
-tempo_inicio = time.time()
-tempo_timite = 30
+tempo_timite = 60
 
-# Ciclo iterativo do método
-while True:
-    
-    k = 1
-    while k <= kmax:
+# Configuração do número de otimizações
+n_execucoes = 5
+
+# Lista para armazenar os históricos de cada execução
+historicos1 = []
+historicos2 = []
+melhores_solucoes1 = []
+melhores_fitness1 = []
+melhores_solucoes2 = []
+melhores_fitness2 = []
+
+for execucao in range(n_execucoes):
+    # Gera solução inicial
+    x = sol_inicial(probdata, False)
+    x2 = sol_inicial(probdata, False)
+
+    # Avalia solução inicial
+    x = fobj_1(x,probdata)
+    x2 = fobj_2(x2, probdata)
+
+    historico.sol.append(x.solution)
+    historico.fit.append(x.fitness)
+
+    historico2.sol.append(x2.solution)
+    historico2.fit.append(x2.fitness)
+
+    tempo_inicio = time.time()
+    # Ciclo iterativo do método
+    while True:
         
-        # Gera uma solução candidata na k-ésima vizinhança de x
-        y = shake(x,k,probdata)
-        y = fobj_1(y,probdata)
-        z = firstImprovement(y, fobj_1, k, probdata)
-        z = fobj_1(z, probdata)
+        k = 1
+        while k <= kmax:
+            
+            # Gera uma solução candidata na k-ésima vizinhança de x
+            y = shake(x,k,probdata)
+            y = fobj_1(y,probdata)
+            z = firstImprovement(y, fobj_1, k, probdata)
+            z = fobj_1(z, probdata)
+            
+            # Atualiza solução corrente e estrutura de vizinhança (se necessário)
+            x,k = neighborhoodChange(x,z,k)
+            
+            # Armazena dados para plot
+            historico.sol.append(x.solution)
+            historico.fit.append(x.fitness)
         
-        # Atualiza solução corrente e estrutura de vizinhança (se necessário)
-        x,k = neighborhoodChange(x,z,k)
+        if(time.time() - tempo_inicio > tempo_timite):
+            break
+
+    historicos1.append(historico)
+    melhores_solucoes1.append(x.solution)
+    melhores_fitness1.append(x.fitness)
+
+    tempo_inicio = time.time()
+
+    while True:
         
-        # Armazena dados para plot
-        historico.sol.append(x.solution)
-        historico.fit.append(x.fitness)
-    
-    if(time.time() - tempo_inicio > tempo_timite):
-        break
+        k = 1
+        while k <= kmax:
+            
+            # Gera uma solução candidata na k-ésima vizinhança de x        
+            y2 = shake(x2,k,probdata)
+            y2 = fobj_2(y2,probdata)
+            z2 = firstImprovement(y2, fobj_2, k, probdata)
+            z2 = fobj_2(z2, probdata)
+            num_sol2_avaliadas += 1
+            
+            # Atualiza solução corrente e estrutura de vizinhança (se necessário)
+            x2,k = neighborhoodChange(x2,z2,k)
+            
+            # Armazena dados para plot
+            historico2.sol.append(x2.solution)
+            historico2.fit.append(x2.fitness)
 
-tempo_inicio = time.time()
+        if(time.time() - tempo_inicio > tempo_timite):
+            break
 
-while True:
-    
-    k = 1
-    while k <= kmax:
-        
-        # Gera uma solução candidata na k-ésima vizinhança de x        
-        y2 = shake(x2,k,probdata)
-        y2 = fobj_2(y2,probdata)
-        z2 = firstImprovement(y2, fobj_2, k, probdata)
-        z2 = fobj_2(z2, probdata)
-        num_sol2_avaliadas += 1
-        
-        # Atualiza solução corrente e estrutura de vizinhança (se necessário)
-        x2,k = neighborhoodChange(x2,z2,k)
-        
-        # Armazena dados para plot
-        historico2.sol.append(x2.solution)
-        historico2.fit.append(x2.fitness)
+    historicos2.append(historico2)
+    melhores_solucoes2.append(x2.solution)
+    melhores_fitness2.append(x2.fitness)
 
-    if(time.time() - tempo_inicio > tempo_timite):
-        break
+    print(f'\n--- EXECUÇÃO {execucao + 1} ---')
+    print(f'fitness 1(x) = {x.fitness:.1f}\n')
+    print(f'fitness 2(x) = {x2.fitness:.1f}\n')
 
-print('\n--- SOLUÇÃO INICIAL CONSTRUÍDA ---\n')
-print('Sequência de tarefas atribuídas aos agentes:\n')
-print('x = {}\n'.format(historico.sol[0]))
-print('fitness(x) = {:.1f}\n'.format(historico.fit[0]))
+indice_melhor1 = np.argmin(melhores_fitness1)
+melhor_solucao_global1 = melhores_solucoes1[indice_melhor1]
+melhor_fitness_global1 = melhores_fitness1[indice_melhor1]
 
-print('\n--- MELHOR SOLUÇÃO ENCONTRADA ---\n')
-print('Sequência de tarefas atribuídas aos agentes:\n')
-print('x = {}\n'.format(x.solution))
-print('fitness(x) = {:.1f}\n'.format(x.fitness))
-print('Valor de f2 para a solucao:\n')
-print('f2={}.'.format(fobj_2(x,probdata).fitness))
+indice_melhor2 = np.argmin(melhores_fitness2)
+melhor_solucao_global2 = melhores_solucoes2[indice_melhor2]
+melhor_fitness_global2 = melhores_fitness2[indice_melhor2]
 
-plt.figure()
-s = len(historico.fit)
-plt.plot(np.linspace(0,s-1,s),historico.fit,'k-')
+print('\n--- MELHOR SOLUÇÃO GLOBAL ENCONTRADA para f1 ---\n')
+print(f'fitness f1(x) = {melhor_fitness_global1:.1f}\n')
+
+print('\n--- MELHOR SOLUÇÃO GLOBAL ENCONTRADA para f2 ---\n')
+print(f'fitness f2(x) = {melhor_fitness_global2:.1f}\n')
+
+# Plot das curvas de convergência
+conv_f1 = plt.figure()
+max_avaliacoes = max(len(historico.fit) for historico in historicos1)
+avaliacoes = np.linspace(0, max_avaliacoes - 1, max_avaliacoes)
+for execucao, historico in enumerate(historicos1):
+    s = len(historico.fit)
+    plt.plot(avaliacoes, historico.fit, label=f'Execução {execucao + 1}')
 plt.title('Evolução da qualidade da solução')
 plt.xlabel('Número de avaliações')
 plt.ylabel('fitness(x)')
+plt.legend()
 
-plt.figure()
-s2 = len(historico2.fit)
-plt.plot(np.linspace(0,s2-1,s2),historico2.fit,'k-')
-plt.title('Evolução da qualidade da solução 2')
+conv_f2 = plt.figure()
+max_avaliacoes = max(len(historico.fit) for historico in historicos2)
+avaliacoes = np.linspace(0, max_avaliacoes - 1, max_avaliacoes)
+for execucao, historico in enumerate(historicos2):
+    plt.plot(avaliacoes, historico.fit, label=f'Execução {execucao + 1}')
+    
+plt.title('Evolução da qualidade da solução')
 plt.xlabel('Número de avaliações')
 plt.ylabel('fitness(x)')
-plot_melhor_solucao(probdata,x.solution)
-plt.show()
+plt.legend()
+conv_f1.show()
+conv_f2.show()
 
+# Plota a melhor solução global
+plot_melhor_solucao(probdata, melhor_solucao_global1)
+plot_melhor_solucao(probdata, melhor_solucao_global2)
