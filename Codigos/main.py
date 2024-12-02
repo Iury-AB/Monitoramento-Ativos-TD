@@ -8,7 +8,7 @@ import pandas as pd
 from random import sample
 import math
 from itertools import combinations
-from plot import plot_melhor_solucao
+from Codigos.plot import plot_melhor_solucao
 import time
 import seaborn as sn
 from collections import Counter
