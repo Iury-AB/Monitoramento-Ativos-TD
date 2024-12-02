@@ -8,11 +8,8 @@ import pandas as pd
 from random import sample
 import math
 from itertools import combinations
-from Codigos.plot import plot_melhor_solucao
+from plot import plot_melhor_solucao
 import time
-import seaborn as sn
-from collections import Counter
-
 
 
 np.set_printoptions(threshold=np.inf) # diretiva para imprimir todos os elementos de uma matriz
@@ -27,7 +24,6 @@ class Struct:
 Ler o arquivo csv contendo as posições geográficas das bases e ativos
 '''
 def carregar_matriz_distancias(arquivo_csv):
-    print(arquivo_csv)
     # Ler o arquivo CSV sem cabeçalho
     dados = pd.read_csv(arquivo_csv, sep=";", decimal=",", header=None)
 
@@ -41,7 +37,7 @@ def carregar_matriz_distancias(arquivo_csv):
 
     # Inicializar matriz de distâncias (14 bases x 125 ativos)
     matriz_distancias = np.zeros((len(coordenadas_bases), len(coordenadas_ativos)))
-    
+
     # Preencher a matriz com as distâncias
     for _, linha in dados.iterrows():
         base_coord = (linha[0], linha[1])
@@ -52,10 +48,8 @@ def carregar_matriz_distancias(arquivo_csv):
         i = base_index[base_coord]
         j = ativo_index[ativo_coord]
         matriz_distancias[i, j] = distancia
-        
-        df = pd.DataFrame(data=matriz_distancias) 
 
-    return df
+    return matriz_distancias
 
 '''
 Implementa a função objetivo do problema
@@ -79,7 +73,7 @@ def fobj_1(x, probdata):
     for j in range(0, probdata.n):
         for i in range(0, probdata.m):
             if(xyh[i][j] != 0):
-                dist_soma +=  probdata.d.at[i,j]
+                dist_soma +=  probdata.d[i][j]
                 n_equipes_base += 1
 
     x.fitness = dist_soma
@@ -111,7 +105,7 @@ def fobj_2 (x, probdata):
 '''
 Define os dados de uma instância arbitrária do problema
 '''
-def probdef(s=np.int8(3),eta=0.2,csv="Codigos/probdata.csv"):
+def probdef(s=3,eta=0.2,csv="probdata.csv"):
 
     # n: número de ativos
     # m: número de bases
@@ -134,9 +128,6 @@ def probdef(s=np.int8(3),eta=0.2,csv="Codigos/probdata.csv"):
         
     return probdata
 
-def base_mais_proxima(dicionario, valor):
-    return min(dicionario, key=lambda k: abs(dicionario[k] - valor))
-
 '''
 Implementa uma solução inicial para o problema
 '''
@@ -154,13 +145,13 @@ def sol_inicial(probdata,apply_constructive_heuristic=False):
     if apply_constructive_heuristic == False:    
         # Constrói solução inicial aleatoriamente
         x = Struct()
-        xyh = np.zeros((probdata.m,probdata.n), dtype=np.int8) # cria uma matriz de elementos de mesma forma do arquivo csv atribuindo valores zero
+        xyh = np.zeros((probdata.m,probdata.n), dtype=int) # cria uma matriz de elementos de mesma forma do arquivo csv atribuindo valores zero
         min = math.ceil(probdata.eta*probdata.n/probdata.s) # Calcula a R6
         media = math.floor(probdata.n/probdata.s)
         sorteado = sample(range(min, media), 1)
         resp = sorteado[0]
         x.resp=resp
-        equipes_sorteadas = sample(range(np.int8(1), probdata.s + np.int8(1)), probdata.s) # sorteia aleatoriamente s equipes
+        equipes_sorteadas = sample(range(1, probdata.s + 1), probdata.s) # sorteia aleatoriamente s equipes
         bases_sorteadas = sample(range(0,probdata.m),probdata.s) # sorteia aleatoriamente s bases
         x.bases_ocupadas = set(bases_sorteadas)
 
@@ -175,68 +166,30 @@ def sol_inicial(probdata,apply_constructive_heuristic=False):
         x.solution = xyh
     
     else:
-
-        bases_mais_proximas={}
-
-        for ativo in range(probdata.n):
-            bases_mais_proximas.update({ativo:np.argmin(probdata.d[ativo])})
-
-        bases = bases_mais_proximas.values()
-
-        freq_bases_mais_proximas = Counter(bases)
-
-        bases_ordenadas = dict(sorted(freq_bases_mais_proximas.items(), key=lambda item:item[1], reverse=True))
-
-        bases_sorteadas = list(bases_ordenadas.keys())[:probdata.s]
-        
-        x = Struct()
-        xyh = np.zeros((probdata.m,probdata.n), dtype=np.int8)
-        min = math.ceil(probdata.eta*probdata.n/probdata.s) # Calcula a R6
-        x.resp = min
-        x.bases_ocupadas = set(bases_sorteadas)
-        
-        for ativo in bases_mais_proximas.keys():
-            base=bases_mais_proximas[ativo]
-            if base in bases_sorteadas:
-                xyh[base,ativo] = bases_sorteadas.index(base) + 1
-            else:
-                
-                i = np.argmin(probdata.d[ativo])
-                distancia = probdata.d.at[i,ativo]
-                distancia_bases_sorteadas={}
-                for base in bases_sorteadas :
-                    distancia_bases_sorteadas.update({base:probdata.d.at[base,ativo]})
-
-                base = base_mais_proxima(distancia_bases_sorteadas, distancia)
-
-                xyh[base,ativo] = bases_sorteadas.index(base) + 1
-
-
-
         ## Constrói solução inicial usando uma heurística construtiva
-        #x = Struct()
-        #xyh = np.zeros((probdata.m,probdata.n), dtype=np.int8)
-        #media = math.floor(probdata.n/probdata.s)
-        #resp = media
-        #x.resp = resp
-        #equipes_sorteadas = sample(range(1, probdata.s + 1), probdata.s) # sorteia aleatoriamente s equipes
-        ##bases_sorteadas = sample(range(0,probdata.m),probdata.s) # sorteia aleatoriamente s bases
-        #ativos = np.argsort(probdata.d.var(axis=0))    # ativos ordenadas de acordo com a correlaçao das distânciais
-        #bases = np.argsort(probdata.d.var(axis=1))    # ativos ordenadas de acordo com a correlaçao das distânciais
-        #bases_sorteadas = bases[0:probdata.s]
-        #x.bases_ocupadas = set(bases_sorteadas)
+        x = Struct()
+        xyh = np.zeros((probdata.m,probdata.n), dtype=int)
+        media = math.floor(probdata.n/probdata.s)
+        resp = media
+        x.resp = resp
+        equipes_sorteadas = sample(range(1, probdata.s + 1), probdata.s) # sorteia aleatoriamente s equipes
+        #bases_sorteadas = sample(range(0,probdata.m),probdata.s) # sorteia aleatoriamente s bases
+        ativos = np.argsort(probdata.d.var(axis=0))    # ativos ordenadas de acordo com a correlaçao das distânciais
+        bases = np.argsort(probdata.d.var(axis=1))    # ativos ordenadas de acordo com a correlaçao das distânciais
+        bases_sorteadas = bases[0:probdata.s]
+        x.bases_ocupadas = set(bases_sorteadas)
 
-        #j = 0
-        #i = 0
+        j = 0
+        i = 0
 
-        #for ativo in ativos[::-1]:               
+        for ativo in ativos[::-1]:               
 
-        #    xyh[bases_sorteadas[i],ativo] = equipes_sorteadas[i] # Atribui os resp elementos seguintes da base i das bases sorteadas à equipe i
+            xyh[bases_sorteadas[i],ativo] = equipes_sorteadas[i] # Atribui os resp elementos seguintes da base i das bases sorteadas à equipe i
             
-        #    j = j + 1
+            j = j + 1
 
-        #    if (i == 0 and j > resp) or (j >  (probdata.s -1)*resp and i < len(equipes_sorteadas)-1):
-        #        i = i + 1 
+            if (i == 0 and j > resp) or (j >  (probdata.s -1)*resp and i < len(equipes_sorteadas)-1):
+                i = i + 1 
 
         x.solution = xyh
         
@@ -261,7 +214,10 @@ def troque_coluna(x, y, probdata):
     n= sample(range(0, probdata.n), 2) # sorteia 2 ativos para permutar
     y.solution[:,n[0]] = x.solution[:,n[1]]
     y.solution[:,n[1]] = x.solution[:,n[0]] 
-    
+    #print(x.solution)
+    #print(y.solution)
+    #print('mudança')
+
     return y
 
 def troque_linha (x, y, probdata):
@@ -271,7 +227,10 @@ def troque_linha (x, y, probdata):
 
     y.solution[m[0],:] = x.solution[m[1],:]
     y.solution[m[1],:] = x.solution[m[0],:]
-            
+    #print(x.solution)
+    #print(y.solution)
+    #print('mudança')
+        
     intersecao = y.bases_ocupadas.intersection(m)
         
 
@@ -428,7 +387,7 @@ probdata = probdef()
 num_sol_avaliadas += 1
 num_sol2_avaliadas += 1
 
-tempo_timite = 100
+tempo_timite = 10
 
 # Configuração do número de otimizações
 n_execucoes = 5
@@ -443,8 +402,8 @@ melhores_fitness2 = []
 
 for execucao in range(n_execucoes):
     # Gera solução inicial
-    x = sol_inicial(probdata, True)
-    x2 = sol_inicial(probdata, True)
+    x = sol_inicial(probdata, False)
+    x2 = sol_inicial(probdata, False)
 
     # Avalia solução inicial
     x = fobj_1(x,probdata)
@@ -468,13 +427,6 @@ for execucao in range(n_execucoes):
 
     tempo_inicio = time.time()
     # Ciclo iterativo do método
-
-    print(f'\n--- AVALIAÇÃO DA SOLUÇÃO INICIAL ---')
-    print(f'fitness 1(x) = {x.fitness:.1f}\n')
-    print(f'fitness 2(x) = {x2.fitness:.1f}\n')
-
-    #plot_melhor_solucao(probdata,x.solution)
-
     while True:
         
         k = 1
@@ -528,12 +480,12 @@ for execucao in range(n_execucoes):
     melhores_solucoes2.append(x2.solution)
     melhores_fitness2.append(x2.fitness)
 
-    #plt.figure()
-    #s = len(historico2.fit)
-    #plt.plot(np.linspace(0,s-1,s),historico2.fit,'k-')
-    #plt.title('Evolução da qualidade da solução')
-    #plt.xlabel('Número de avaliações')
-    #plt.ylabel('fitness(x)')
+    plt.figure()
+    s = len(historico2.fit)
+    plt.plot(np.linspace(0,s-1,s),historico2.fit,'k-')
+    plt.title('Evolução da qualidade da solução')
+    plt.xlabel('Número de avaliações')
+    plt.ylabel('fitness(x)')
 
     print(f'\n--- EXECUÇÃO {execucao + 1} ---')
     print(f'fitness 1(x) = {x.fitness:.1f}\n')
@@ -555,20 +507,16 @@ print(f'fitness f2(x) = {melhor_fitness_global2:.1f}\n')
 
 # Plot das curvas de convergência
 
-plt.figure()
-
-
 for execucao, historico in enumerate(historicos1):
     s = len(historico.fit)
     plt.plot(np.linspace(0,s-1,s), historico.fit, label=f'Execução {execucao + 1}')
-
 plt.title('Evolução da qualidade da solução')
 plt.xlabel('Número de avaliações')
 plt.ylabel('fitness(x)')
 plt.legend()
-#plt.show()
+plt.show()
+plt.close()
 
-plt.figure()
 for execucao, historico in enumerate(historicos2):
     s = len(historico.fit)
     plt.plot(np.linspace(0,s-1,s), historico.fit, label=f'Execução {execucao + 1}')
@@ -577,13 +525,9 @@ plt.title('Evolução da qualidade da solução')
 plt.xlabel('Número de avaliações')
 plt.ylabel('fitness(x)')
 plt.legend()
-#plt.show()
-
+plt.show()
+plt.close()
 
 # Plota a melhor solução global
 plot_melhor_solucao(probdata, melhor_solucao_global1)
 plot_melhor_solucao(probdata, melhor_solucao_global2)
-
-
-
-
