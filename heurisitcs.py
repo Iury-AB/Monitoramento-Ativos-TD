@@ -52,6 +52,9 @@ def fobj_2(x, probdata):
     x.fitness = dist_soma
     return x
 
+def normalizada(f, x, min, max):
+    f_normal = (f(x)-min)/(max-min)
+    return f_normal
 
 def sol_inicial(probdata, apply_constructive_heuristic=False):
     x = Struct()
