@@ -8,9 +8,8 @@ import pandas as pd
 from random import sample
 import math
 from itertools import combinations
-from plot import plot_melhor_solucao
+from plot_old import plot_melhor_solucao
 import time
-import seaborn as sn
 from collections import Counter
 
 
@@ -177,12 +176,6 @@ def sol_inicial(probdata,apply_constructive_heuristic=False):
     else:
 
         bases_mais_proximas={}
-        for ativo in range(probdata.n):
-            bases_mais_proximas.update({ativo:np.argmin(probdata.d[ativo])})
-
-        
-
-        '''bases_mais_proximas={}
 
         for ativo in range(probdata.n):
             bases_mais_proximas.update({ativo:np.argmin(probdata.d[ativo])})
@@ -215,7 +208,7 @@ def sol_inicial(probdata,apply_constructive_heuristic=False):
 
                 base = base_mais_proxima(distancia_bases_sorteadas, distancia)
 
-                xyh[base,ativo] = bases_sorteadas.index(base) + 1'''
+                xyh[base,ativo] = bases_sorteadas.index(base) + 1
 
 
 
@@ -325,7 +318,7 @@ def shake(x, k, probdata):
             for i,base in enumerate(x.bases_ocupadas):
                 if x.solution[base,n[0]]!=0 :
                     i_n0 = base
-                
+                  
 
                 if x.solution[base,n[1]]!=0:
                     i_n1 = base
@@ -356,7 +349,7 @@ def vizinhanca(x, k, i):
         y.solution[dupla[0],:] = x.solution[dupla[1],:]
         y.solution[dupla[1],:] = x.solution[dupla[0],:]
 
-    elif k == 4:
+    elif k == 3:
         i_n0 = 0
         i_n1 = 0
         achou = False
@@ -375,7 +368,7 @@ def vizinhanca(x, k, i):
                         achou=True
                         y.solution[i_n0,dupla[1]] = x.solution[i_n0,dupla[0]]
                         y.solution[i_n1,dupla[1]] = 0
-    
+    '''
     elif k == 3: # altera aleatoriamente uma equipe de ativo e base
         dupla = combinacao_ativo_base[i]
         # Troca linhas diretamente
@@ -389,7 +382,7 @@ def vizinhanca(x, k, i):
             y.solution[:, dupla[0][1]].copy(),
             y.solution[:, dupla[0][0]].copy(),
         )
-    
+    '''
 
     return y
 
@@ -399,7 +392,7 @@ def firstImprovement(x, obj, k, probdata):
         y=x
         i = 0
         vizinhos = []
-        n_viz = 100
+        n_viz = 40
         for j in range(n_viz):
             vizinhos.append(shake(x, k, probdata))
 
@@ -434,7 +427,7 @@ probdata = probdef()
 num_sol_avaliadas += 1
 num_sol2_avaliadas += 1
 
-tempo_timite = 10
+tempo_timite = 100
 
 # Configuração do número de otimizações
 n_execucoes = 5
@@ -449,8 +442,8 @@ melhores_fitness2 = []
 
 for execucao in range(n_execucoes):
     # Gera solução inicial
-    x = sol_inicial(probdata)
-    x2 = sol_inicial(probdata)
+    x = sol_inicial(probdata, True)
+    x2 = sol_inicial(probdata, True)
 
     # Avalia solução inicial
     x = fobj_1(x,probdata)
