@@ -2,16 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
-from heurisitcs import sol_inicial, fobj_1, fobj_2_old, shake, firstImprovement, neighborhoodChange
-from problem import probdef, Struct
+from heurisitcs import sol_inicial, fobj_1, fobj_2_old, fobj_2, shake, firstImprovement, neighborhoodChange
+from problem import probdef, probdef_new, Struct
 from plot import plot_melhor_solucao
 
 np.set_printoptions(threshold=np.inf) # diretiva para imprimir todos os elementos de uma matriz
 
 # Parâmetros gerais
-probdata = probdef()
+probdata = probdef_new()
 kmax = 4
-tempo_timite = 100
+tempo_timite = 15
 n_execucoes = 5
 
 historicos1 = []
@@ -23,12 +23,12 @@ melhores_fitness2 = []
 
 for execucao in range(n_execucoes):
     # Gera solução inicial
-    x = sol_inicial(probdata, True)
-    x2 = sol_inicial(probdata, True)
+    x = sol_inicial(probdata)
+    x2 = sol_inicial(probdata)
 
     # Avalia solução inicial
     x = fobj_1(x,probdata)
-    x2 = fobj_2_old(x2, probdata)
+    x2 = fobj_2(x2, probdata)
 
     # Armazena dados para plot
     historico = Struct()
@@ -75,9 +75,9 @@ for execucao in range(n_execucoes):
         k = 1
         while k <= kmax:
             y2 = shake(x2,k,probdata)
-            y2 = fobj_2_old(y2, probdata)
-            z2 = firstImprovement(y2, fobj_2_old, k, probdata)
-            z2 = fobj_2_old(z2, probdata)
+            y2 = fobj_2(y2, probdata)
+            z2 = firstImprovement(y2, fobj_2, k, probdata)
+            z2 = fobj_2(z2, probdata)
             x2,k = neighborhoodChange(x2,z2,k)
             historico2.sol.append(x2.solution)
             historico2.fit.append(x2.fitness)
