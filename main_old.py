@@ -8,9 +8,8 @@ import pandas as pd
 from random import sample
 import math
 from itertools import combinations
-from Codigos.plot import plot_melhor_solucao
+from plot_old import plot_melhor_solucao
 import time
-import seaborn as sn
 from collections import Counter
 
 
@@ -111,7 +110,7 @@ def fobj_2 (x, probdata):
 '''
 Define os dados de uma instância arbitrária do problema
 '''
-def probdef(s=np.int8(3),eta=0.2,csv="Codigos/probdata.csv"):
+def probdef(s=np.int8(3),eta=0.2,csv="probdata.csv"):
 
     # n: número de ativos
     # m: número de bases
