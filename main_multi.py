@@ -129,11 +129,12 @@ if __name__ == "__main__":
     nd_pw = get_nondominated_set(solutions_pw)
 
     # Abordagem 2: ε-restrito
-    eps_values = [700, 1000, 1300, 1600, 2000]
+    eps_values = [[700, 1000, 1300, 1600, 2000],[1000, 2000, 3000, 4000, 5000]]
+
     solutions_eps = []
-    for eps in eps_values:
-        for execucao in range(n_execucoes):
-            for func in (1,2):
+    for func in (1,2):
+        for eps in eps_values[func-1]:
+            for execucao in range(n_execucoes):
                 print(f"\n=== Rodando Eps-Restrito com eps={eps}, Execução={execucao+1} e {func} restrita ===")
                 sol = run_epsilon_restrito(probdata, func, eps)
                 solutions_eps.append(sol)
