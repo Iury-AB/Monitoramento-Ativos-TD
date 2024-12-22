@@ -156,22 +156,42 @@ if __name__ == "__main__":
 
     nd_eps = get_nondominated_set(solutions_eps)
 
+    # (1) Lista de soluções dominadas: aquelas que NÃO estão em nd_*
+    dominated_pw = [sol for sol in solutions_pw if sol not in nd_pw]
+    dominated_eps = [sol for sol in solutions_eps if sol not in nd_eps]
+
+    # (2) Limita as não-dominadas a no máx. 20 (caso queira manter)
     if len(nd_pw) > 20:
         nd_pw = nd_pw[:20]
     if len(nd_eps) > 20:
         nd_eps = nd_eps[:20]
 
-    plt.figure(figsize=(8, 6))  # figura maior
+    # (3) Plot de TODAS as soluções, separando por cor/forma se dominadas ou não
+    plt.figure(figsize=(8, 6))
 
-    # --- Plotando Pw ---
-    f1_pw = [s.f1_val for s in nd_pw]
-    f2_pw = [s.f2_val for s in nd_pw]
-    plt.scatter(f1_pw, f2_pw, c='red', marker='o', label='Soma Ponderada')
+    # --- Pw: dominadas ---
+    f1_pw_dom = [s.f1_val for s in dominated_pw]
+    f2_pw_dom = [s.f2_val for s in dominated_pw]
+    plt.scatter(f1_pw_dom, f2_pw_dom, c='pink', marker='o', alpha=0.7, label='Dominadas (Pw)')
 
-    # Anotar cada ponto no gráfico de Soma Ponderada
+    # --- Pw: não-dominadas ---
+    f1_pw_nd = [s.f1_val for s in nd_pw]
+    f2_pw_nd = [s.f2_val for s in nd_pw]
+    plt.scatter(f1_pw_nd, f2_pw_nd, c='red', marker='o', label='Não-Dominadas (Pw)')
+
+    # --- Pε: dominadas ---
+    f1_eps_dom = [s.f1_val for s in dominated_eps]
+    f2_eps_dom = [s.f2_val for s in dominated_eps]
+    plt.scatter(f1_eps_dom, f2_eps_dom, c='lightskyblue', marker='^', alpha=0.7, label='Dominadas (Pε)')
+
+    # --- Pε: não-dominadas ---
+    f1_eps_nd = [s.f1_val for s in nd_eps]
+    f2_eps_nd = [s.f2_val for s in nd_eps]
+    plt.scatter(f1_eps_nd, f2_eps_nd, c='blue', marker='^', label='Não-Dominadas (Pε)')
+
+    # Anotar somente as não-dominadas, se desejar (opcional):
     for s in nd_pw:
-        # Se guardou w1,w2 na Struct:
-        if s.w1 is not None and s.w2 is not None:
+        if hasattr(s, 'w1') and hasattr(s, 'w2'):
             plt.annotate(
                 f"(w1={s.w1}, w2={s.w2})",
                 xy=(s.f1_val, s.f2_val),
@@ -180,16 +200,8 @@ if __name__ == "__main__":
                 fontsize=8,
                 color='red'
             )
-
-    # --- Plotando Pε ---
-    f1_eps = [s.f1_val for s in nd_eps]
-    f2_eps = [s.f2_val for s in nd_eps]
-    plt.scatter(f1_eps, f2_eps, c='blue', marker='^', label='Eps-Restrito')
-
-    # Anotar cada ponto no gráfico de Eps-Restrito
     for s in nd_eps:
-        # Se guardou eps na Struct:
-        if s.eps is not None:
+        if hasattr(s, 'eps'):
             plt.annotate(
                 f"(eps={s.eps})",
                 xy=(s.f1_val, s.f2_val),
@@ -201,12 +213,14 @@ if __name__ == "__main__":
 
     plt.xlabel('f1(x) - Custo de Deslocamento')
     plt.ylabel('f2(x) - Risco Esperado de Falha')
-    plt.title('Fronteiras Não-Dominadas: Pw e Pε')
+    plt.title('Todas as Soluções: Dominadas vs. Não-Dominadas (Pw e Pε)')
     plt.legend(loc='best')
     plt.grid(True)
     plt.show()
 
+    # (4) Plotar as MELHORES soluções não-dominadas (já filtradas) no final
     best_pw = min(nd_pw, key=lambda s: s.fitness)
     best_eps = min(nd_eps, key=lambda s: s.fitness)
     plot_melhor_solucao(probdata, best_pw.solution)
     plot_melhor_solucao(probdata, best_eps.solution)
+
