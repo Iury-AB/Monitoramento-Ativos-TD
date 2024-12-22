@@ -24,6 +24,8 @@ def run_weighted_sum(probdata, w1, w2):
 
     # Gera sol inicial
     x = sol_inicial(probdata)
+    x.w1 = w1
+    x.w2 = w2
     # Avalia
     x = fobj_weighted_normalized(x, probdata, w1, w2)
 
@@ -67,6 +69,7 @@ def run_epsilon_restrito(probdata, restrita, eps):
     """
     x = sol_inicial(probdata)
     x = fobj_epsilon_restrito(x, restrita, probdata, eps)
+    x.eps = eps
 
     tempo_inicio = time.time()
     iter_count = 0
@@ -117,7 +120,19 @@ def get_nondominated_set(solutions):
 
 if __name__ == "__main__":
     # Abordagem 1: Soma Ponderada
-    pesos = [(0.0,1.0), (0.25,0.75), (0.5,0.5), (0.75,0.25), (1.0,0.0)]
+    pesos = [
+        (0.0, 1.0),
+        (0.1, 0.9),
+        (0.2, 0.8),
+        (0.3, 0.7),
+        (0.4, 0.6),
+        (0.5, 0.5),
+        (0.6, 0.4),
+        (0.7, 0.3),
+        (0.8, 0.2),
+        (0.9, 0.1),
+        (1.0, 0.0),
+    ]
 
     solutions_pw = []
     for (w1,w2) in pesos:
@@ -146,19 +161,48 @@ if __name__ == "__main__":
     if len(nd_eps) > 20:
         nd_eps = nd_eps[:20]
 
-    plt.figure()
+    plt.figure(figsize=(8, 6))  # figura maior
+
+    # --- Plotando Pw ---
     f1_pw = [s.f1_val for s in nd_pw]
     f2_pw = [s.f2_val for s in nd_pw]
-    plt.scatter(f1_pw, f2_pw, c='red', label='Soma Ponderada')
+    plt.scatter(f1_pw, f2_pw, c='red', marker='o', label='Soma Ponderada')
 
+    # Anotar cada ponto no gráfico de Soma Ponderada
+    for s in nd_pw:
+        # Se guardou w1,w2 na Struct:
+        if s.w1 is not None and s.w2 is not None:
+            plt.annotate(
+                f"(w1={s.w1}, w2={s.w2})",
+                xy=(s.f1_val, s.f2_val),
+                xytext=(5, 5),
+                textcoords='offset points',
+                fontsize=8,
+                color='red'
+            )
+
+    # --- Plotando Pε ---
     f1_eps = [s.f1_val for s in nd_eps]
     f2_eps = [s.f2_val for s in nd_eps]
-    plt.scatter(f1_eps, f2_eps, c='blue', label='Eps-Restrito')
+    plt.scatter(f1_eps, f2_eps, c='blue', marker='^', label='Eps-Restrito')
 
-    plt.xlabel('f1(x)')
-    plt.ylabel('f2(x)')
-    plt.title('Fronteiras Não-Dominadas (Pw e Pε)')
-    plt.legend()
+    # Anotar cada ponto no gráfico de Eps-Restrito
+    for s in nd_eps:
+        # Se guardou eps na Struct:
+        if s.eps is not None:
+            plt.annotate(
+                f"(eps={s.eps})",
+                xy=(s.f1_val, s.f2_val),
+                xytext=(5, 5),
+                textcoords='offset points',
+                fontsize=8,
+                color='blue'
+            )
+
+    plt.xlabel('f1(x) - Custo de Deslocamento')
+    plt.ylabel('f2(x) - Risco Esperado de Falha')
+    plt.title('Fronteiras Não-Dominadas: Pw e Pε')
+    plt.legend(loc='best')
     plt.grid(True)
     plt.show()
 
