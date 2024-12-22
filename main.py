@@ -11,7 +11,7 @@ np.set_printoptions(threshold=np.inf) # diretiva para imprimir todos os elemento
 # Parâmetros gerais
 probdata = probdef_new()
 kmax = 4
-tempo_timite = 15
+tempo_timite = 20
 n_execucoes = 5
 
 historicos1 = []

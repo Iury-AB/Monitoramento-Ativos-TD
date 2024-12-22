@@ -33,12 +33,12 @@ def run_weighted_sum(probdata, w1, w2):
     while True:
         # Imprime a cada iteração do loop externo
         elapsed = time.time() - tempo_inicio
-        print(f"[WeightedSum] Iter={iter_count}, Current Fitness={x.fitness:.4f}, Elapsed={elapsed:.2f}s")
+        #print(f"[WeightedSum] Iter={iter_count}, Current Fitness={x.fitness:.4f}, Elapsed={elapsed:.2f}s")
 
         k = 1
         while k <= kmax:
             # Debug do valor de k
-            print(f"  -> k={k}, best_fitness={x.fitness:.4f}")
+            #print(f"  -> k={k}, best_fitness={x.fitness:.4f}")
 
             y = shake(x, k, probdata)
             y = fobj_weighted_normalized(y, probdata, w1, w2)
@@ -53,44 +53,44 @@ def run_weighted_sum(probdata, w1, w2):
         iter_count += 1
 
         if time.time() - tempo_inicio > tempo_limite:
-            print(f"[WeightedSum] Tempo limite de {tempo_limite}s atingido. Encerrando loop.")
+            #print(f"[WeightedSum] Tempo limite de {tempo_limite}s atingido. Encerrando loop.")
             break
 
     return x
 
 # ========== EPSILON-RESTRITO (Pε) ==========
 
-def run_epsilon_restrito(probdata, eps):
+def run_epsilon_restrito(probdata, restrita, eps):
     """
     Roda o RVNS usando fobj_epsilon_restrito com restrição f2(x) <= eps.
     Retorna a melhor solução final encontrada (x).
     """
     x = sol_inicial(probdata)
-    x = fobj_epsilon_restrito(x, probdata, eps)
+    x = fobj_epsilon_restrito(x, restrita, probdata, eps)
 
     tempo_inicio = time.time()
     iter_count = 0
 
     while True:
         elapsed = time.time() - tempo_inicio
-        print(f"[EpsRestrict] Iter={iter_count}, Current Fitness={x.fitness:.4f}, Elapsed={elapsed:.2f}s")
+        #print(f"[EpsRestrict] Iter={iter_count}, Current Fitness={x.fitness:.4f}, Elapsed={elapsed:.2f}s")
 
         k = 1
         while k <= kmax:
-            print(f"  -> k={k}, best_fitness={x.fitness:.4f}")
+            #print(f"  -> k={k}, best_fitness={x.fitness:.4f}")
 
             y = shake(x, k, probdata)
-            y = fobj_epsilon_restrito(y, probdata, eps)
+            y = fobj_epsilon_restrito(y, restrita, probdata, eps)
 
-            z = first_improvement_new(y, fobj_epsilon_restrito, k, probdata, eps=eps)
-            z = fobj_epsilon_restrito(z, probdata, eps)
+            z = first_improvement_new(y, fobj_epsilon_restrito, k, probdata, eps=eps, restrita=restrita)
+            z = fobj_epsilon_restrito(z, restrita, probdata, eps)
 
             x, k = neighborhoodChange(x, z, k)
 
         iter_count += 1
 
         if time.time() - tempo_inicio > tempo_limite:
-            print(f"[EpsRestrict] Tempo limite de {tempo_limite}s atingido. Encerrando loop.")
+            #print(f"[EpsRestrict] Tempo limite de {tempo_limite}s atingido. Encerrando loop.")
             break
 
     return x
@@ -133,9 +133,10 @@ if __name__ == "__main__":
     solutions_eps = []
     for eps in eps_values:
         for execucao in range(n_execucoes):
-            print(f"\n=== Rodando Eps-Restrito com eps={eps}, Execução={execucao+1} ===")
-            sol = run_epsilon_restrito(probdata, eps)
-            solutions_eps.append(sol)
+            for func in (1,2):
+                print(f"\n=== Rodando Eps-Restrito com eps={eps}, Execução={execucao+1} e {func} restrita ===")
+                sol = run_epsilon_restrito(probdata, func, eps)
+                solutions_eps.append(sol)
 
     nd_eps = get_nondominated_set(solutions_eps)
 

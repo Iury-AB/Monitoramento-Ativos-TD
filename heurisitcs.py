@@ -85,11 +85,12 @@ def fobj_weighted_normalized(x, probdata, w1, w2):
 
     return x
 
-def fobj_epsilon_restrito(x, probdata, eps):
+def fobj_epsilon_restrito(x, restrita, probdata, eps):
     """
     Minimiza f1 (distância total) sujeito a f2(x) <= eps
     Se f2(x) > eps, penaliza fortemente
     """
+    
     # Calcula f1
     x = fobj_1(x, probdata)
     f1_val = x.fitness
@@ -101,10 +102,17 @@ def fobj_epsilon_restrito(x, probdata, eps):
     x.f1_val = f1_val
     x.f2_val = f2_val
 
-    if f2_val > eps:
-        x.fitness = 1e10  # penaliza
-    else:
-        x.fitness = f1_val
+    if restrita == 2:
+        if f2_val > eps:
+            x.fitness = 1e10  # penaliza
+        else:
+            x.fitness = f1_val
+    elif restrita == 1:
+        if f1_val > eps:
+            x.fitness = 1e10  # penaliza
+        else:
+            x.fitness = f2_val
+
     return x
 
 def sol_inicial(probdata, apply_constructive_heuristic=False):
@@ -279,16 +287,16 @@ def firstImprovement(x, obj, k, probdata):
             break
     return x
 
-def first_improvement_new(x, obj, k, probdata, w1=None, w2=None, eps=None):
+def first_improvement_new(x, obj, k, probdata, w1=None, w2=None, eps=None, restrita=2):
     iter_local = 0
     while True:
         y = x
         i = 0
         vizinhos = []
-        n_viz = 2
+        n_viz = 40
 
         # Print do estado inicial no laço
-        print(f"    [FI] iter_local={iter_local}, fitness_atual={x.fitness:.4f}, k={k}")
+        #print(f"    [FI] iter_local={iter_local}, fitness_atual={x.fitness:.4f}, k={k}")
 
         for _ in range(n_viz):
             vizinhos.append(shake(x, k, probdata))
@@ -298,19 +306,19 @@ def first_improvement_new(x, obj, k, probdata, w1=None, w2=None, eps=None):
             if w1 is not None and w2 is not None:
                 xi = obj(xi, probdata, w1, w2)
             elif eps is not None:
-                xi = obj(xi, probdata, eps)
+                xi = obj(xi, restrita, probdata, eps)
             else:
                 xi = obj(xi, probdata)
 
             # Exemplo de print a cada 5 vizinhos
-            if i % 5 == 0:
-                print(f"      [FI] checking neighbor i={i}, xi.fitness={xi.fitness:.4f}")
+            #if i % 5 == 0:
+            #    print(f"      [FI] checking neighbor i={i}, xi.fitness={xi.fitness:.4f}")
 
             x = xi if (xi.fitness < x.fitness) else x
             i += 1
 
         if x.fitness >= y.fitness:
-            print("    [FI] Nenhuma melhoria encontrada. Encerrando first_improvement_new.")
+            #print("    [FI] Nenhuma melhoria encontrada. Encerrando first_improvement_new.")
             break
 
         iter_local += 1
