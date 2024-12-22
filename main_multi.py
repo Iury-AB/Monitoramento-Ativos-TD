@@ -15,7 +15,7 @@ from plot import plot_melhor_solucao
 
 probdata = probdef_new()
 kmax = 4
-tempo_limite = 1500
+tempo_limite = 15
 n_execucoes = 5
 
 # ========== SOMA PONDERADA (Pw) ==========
