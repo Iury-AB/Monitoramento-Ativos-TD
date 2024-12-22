@@ -144,7 +144,7 @@ if __name__ == "__main__":
     nd_pw = get_nondominated_set(solutions_pw)
 
     # Abordagem 2: ε-restrito
-    eps_values = [[700, 1000, 1300, 1600, 2000],[1000, 2000, 3000, 4000, 5000]]
+    eps_values = [[1000, 2000, 3000, 4000, 5000], [700, 1000, 1300, 1600, 2000]]
 
     solutions_eps = []
     for func in (1,2):
