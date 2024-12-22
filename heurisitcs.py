@@ -7,6 +7,10 @@ from itertools import combinations
 from problem import Struct
 from utils import base_mais_proxima
 
+F1_MIN = 1010.5
+F1_MAX = 6279.2
+F2_MIN = 412.6
+F2_MAX = 2119.8
 
 def fobj_1(x, probdata):
     dist_soma = 0
@@ -52,9 +56,56 @@ def fobj_2(x, probdata):
     x.fitness = dist_soma
     return x
 
-def normalizada(f, x, min, max):
-    f_normal = (f(x)-min)/(max-min)
-    return f_normal
+def fobj_weighted_normalized(x, probdata, w1, w2):
+    # 1) Calcula f1 bruto
+    x = fobj_1(x, probdata)
+    f1_raw = x.fitness
+
+    # 2) Calcula f2 bruto
+    x = fobj_2(x, probdata)
+    f2_raw = x.fitness
+
+    # Armazena valores para possíveis análises
+    x.f1_val = f1_raw
+    x.f2_val = f2_raw
+
+    # 3) Normaliza
+    #    f1_norm = (f1 - F1_MIN) / (F1_MAX - F1_MIN)
+    #    f2_norm = (f2 - F2_MIN) / (F2_MAX - F2_MIN)
+
+    denom_f1 = (F1_MAX - F1_MIN)
+    denom_f2 = (F2_MAX - F2_MIN)
+
+    f1_norm = (f1_raw - F1_MIN) / denom_f1
+    f2_norm = (f2_raw - F2_MIN) / denom_f2
+
+    # 4) Soma Ponderada
+    weighted_sum = w1*f1_norm + w2*f2_norm
+    x.fitness = weighted_sum
+
+    return x
+
+def fobj_epsilon_restrito(x, probdata, eps):
+    """
+    Minimiza f1 (distância total) sujeito a f2(x) <= eps
+    Se f2(x) > eps, penaliza fortemente
+    """
+    # Calcula f1
+    x = fobj_1(x, probdata)
+    f1_val = x.fitness
+
+    # Calcula f2
+    x = fobj_2(x, probdata)
+    f2_val = x.fitness
+
+    x.f1_val = f1_val
+    x.f2_val = f2_val
+
+    if f2_val > eps:
+        x.fitness = 1e10  # penaliza
+    else:
+        x.fitness = f1_val
+    return x
 
 def sol_inicial(probdata, apply_constructive_heuristic=False):
     x = Struct()
@@ -226,4 +277,41 @@ def firstImprovement(x, obj, k, probdata):
             i += 1
         if (x.fitness >= y.fitness):
             break
+    return x
+
+def first_improvement_new(x, obj, k, probdata, w1=None, w2=None, eps=None):
+    iter_local = 0
+    while True:
+        y = x
+        i = 0
+        vizinhos = []
+        n_viz = 2
+
+        # Print do estado inicial no laço
+        print(f"    [FI] iter_local={iter_local}, fitness_atual={x.fitness:.4f}, k={k}")
+
+        for _ in range(n_viz):
+            vizinhos.append(shake(x, k, probdata))
+
+        while x.fitness >= y.fitness and i < n_viz:
+            xi = vizinhos[i]
+            if w1 is not None and w2 is not None:
+                xi = obj(xi, probdata, w1, w2)
+            elif eps is not None:
+                xi = obj(xi, probdata, eps)
+            else:
+                xi = obj(xi, probdata)
+
+            # Exemplo de print a cada 5 vizinhos
+            if i % 5 == 0:
+                print(f"      [FI] checking neighbor i={i}, xi.fitness={xi.fitness:.4f}")
+
+            x = xi if (xi.fitness < x.fitness) else x
+            i += 1
+
+        if x.fitness >= y.fitness:
+            print("    [FI] Nenhuma melhoria encontrada. Encerrando first_improvement_new.")
+            break
+
+        iter_local += 1
     return x
