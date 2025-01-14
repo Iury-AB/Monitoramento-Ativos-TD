@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import csv
 
 from heurisitcs import (
     shake,
@@ -118,6 +119,34 @@ def get_nondominated_set(solutions):
             nd_set.append(sA)
     return nd_set
 
+def salvar_solucoes_em_csv(nd_pw, nd_eps, nome_arquivo):
+    """
+    Salva as soluções de nd_pw e nd_eps em um arquivo CSV.
+    Cada solução inclui a matriz solution (14x125), f1_value e f2_value.
+
+    Parâmetros:
+        nd_pw (list): Lista de soluções não-dominadas da abordagem Pw.
+        nd_eps (list): Lista de soluções não-dominadas da abordagem Pε.
+        nome_arquivo (str): Nome do arquivo CSV para salvar os dados.
+    """
+    with open(nome_arquivo, mode='w', newline='') as arquivo:
+        writer = csv.writer(arquivo)
+        
+        # Cabeçalhos
+        writer.writerow(['Abordagem', 'ID Solucao', 'f1_value', 'f2_value', 'Matriz Solution (14x125)'])
+        
+        # Escreve as soluções de nd_pw
+        for idx, sol in enumerate(nd_pw, start=1):
+            matriz_flat = sol.solution.flatten()  # Flatten da matriz 14x125
+            linha = ['Pw', idx, sol.f1_val, sol.f2_val] + matriz_flat.tolist()
+            writer.writerow(linha)
+        
+        # Escreve as soluções de nd_eps
+        for idx, sol in enumerate(nd_eps, start=1):
+            matriz_flat = sol.solution.flatten()  # Flatten da matriz 14x125
+            linha = ['Pε', idx, sol.f1_val, sol.f2_val] + matriz_flat.tolist()
+            writer.writerow(linha)
+
 if __name__ == "__main__":
     # Abordagem 1: Soma Ponderada
     pesos = [
@@ -223,4 +252,6 @@ if __name__ == "__main__":
     best_eps = min(nd_eps, key=lambda s: s.fitness)
     plot_melhor_solucao(probdata, best_pw.solution)
     plot_melhor_solucao(probdata, best_eps.solution)
+
+    salvar_solucoes_em_csv(nd_pw, nd_eps, "solucoes.csv")
 
