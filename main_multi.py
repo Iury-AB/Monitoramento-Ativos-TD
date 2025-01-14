@@ -144,7 +144,7 @@ def salvar_solucoes_em_csv(nd_pw, nd_eps, nome_arquivo):
         # Escreve as soluções de nd_eps
         for idx, sol in enumerate(nd_eps, start=1):
             matriz_flat = sol.solution.flatten()  # Flatten da matriz 14x125
-            linha = ['Pε', idx, sol.f1_val, sol.f2_val] + matriz_flat.tolist()
+            linha = ['Pe', idx, sol.f1_val, sol.f2_val] + matriz_flat.tolist()
             writer.writerow(linha)
 
 if __name__ == "__main__":
