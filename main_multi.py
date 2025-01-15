@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import csv
+import json
 
 from heurisitcs import (
     shake,
@@ -122,7 +123,7 @@ def get_nondominated_set(solutions):
 def salvar_solucoes_em_csv(nd_pw, nd_eps, nome_arquivo):
     """
     Salva as soluções de nd_pw e nd_eps em um arquivo CSV.
-    Cada solução inclui a matriz solution (14x125), f1_value e f2_value.
+    Cada solução inclui a matriz solution (14x125) em formato JSON, f1_value e f2_value.
 
     Parâmetros:
         nd_pw (list): Lista de soluções não-dominadas da abordagem Pw.
@@ -131,20 +132,24 @@ def salvar_solucoes_em_csv(nd_pw, nd_eps, nome_arquivo):
     """
     with open(nome_arquivo, mode='w', newline='') as arquivo:
         writer = csv.writer(arquivo)
-        
+
         # Cabeçalhos
         writer.writerow(['Abordagem', 'ID Solucao', 'f1_value', 'f2_value', 'Matriz Solution (14x125)'])
-        
+
+        # Função para serializar a matriz como JSON
+        def matriz_para_json(matriz):
+            return json.dumps(matriz.tolist())
+
         # Escreve as soluções de nd_pw
         for idx, sol in enumerate(nd_pw, start=1):
-            matriz_flat = sol.solution.flatten()  # Flatten da matriz 14x125
-            linha = ['Pw', idx, sol.f1_val, sol.f2_val] + matriz_flat.tolist()
+            matriz_json = matriz_para_json(sol.solution)  # Converte a matriz para JSON
+            linha = ['Pw', idx, sol.f1_val, sol.f2_val, matriz_json]
             writer.writerow(linha)
-        
+
         # Escreve as soluções de nd_eps
         for idx, sol in enumerate(nd_eps, start=1):
-            matriz_flat = sol.solution.flatten()  # Flatten da matriz 14x125
-            linha = ['Pe', idx, sol.f1_val, sol.f2_val] + matriz_flat.tolist()
+            matriz_json = matriz_para_json(sol.solution)  # Converte a matriz para JSON
+            linha = ['Pe', idx, sol.f1_val, sol.f2_val, matriz_json]
             writer.writerow(linha)
 
 if __name__ == "__main__":
@@ -247,11 +252,13 @@ if __name__ == "__main__":
     plt.grid(True)
     plt.show()
 
+    salvar_solucoes_em_csv(nd_pw, nd_eps, "solucoes.csv")
+
     # (4) Plotar as MELHORES soluções não-dominadas (já filtradas) no final
     best_pw = min(nd_pw, key=lambda s: s.fitness)
     best_eps = min(nd_eps, key=lambda s: s.fitness)
     plot_melhor_solucao(probdata, best_pw.solution)
     plot_melhor_solucao(probdata, best_eps.solution)
 
-    salvar_solucoes_em_csv(nd_pw, nd_eps, "solucoes.csv")
+    
 
