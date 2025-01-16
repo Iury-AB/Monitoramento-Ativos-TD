@@ -455,18 +455,18 @@ for alternativa in alternativas:
     balanco_carga(alternativa, probdata)
 
 atributos_par_a_par = [
-    [1, 1/3, 1/5, 3],       # f1_value comparado com os outros atributos
-    [3, 1, 1/3, 5],     # f2_value comparado com os outros atributos
-    [5, 3, 1, 7],   # robustez comparado com os outros atributos
-    [1/3, 1/5, 1/7, 1]  # balanco_sd comparado com os outros atributos
+    [1, 5, 7, 3],       # f1_value comparado com os outros atributos
+    [1/5, 1, 3, 1/3],     # f2_value comparado com os outros atributos
+    [1/7, 1/3, 1, 1/5],   # robustez comparado com os outros atributos
+    [1/3, 3, 5, 1]  # balanco_sd comparado com os outros atributos
 ]
 
 '''
 Prioridades:
-1) robustez
-2) f2_value
-3) f1_value
-4) balanco_sd
+1) f1_value
+2) balanco_sd
+3) f2_value
+4) robustez
 '''
 
 decisao_ahp = ahp_classic(alternativas, atributos_par_a_par)
