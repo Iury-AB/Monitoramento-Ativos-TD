@@ -4,6 +4,7 @@ import pandas as pd
 from geopy.distance import geodesic
 from heurisitcs import fobj_1, fobj_2
 import json
+from plot import plot_melhor_solucao
 
 
 def ler_solucoes_do_csv(nome_arquivo):
@@ -201,6 +202,38 @@ def ahp_classic(solucoes, matriz_comparacao_atributos):
         matriz_norm = matriz / col_sum
         pesos = np.mean(matriz_norm, axis=1)
         return pesos
+    
+    def calcular_consistencia(matriz):
+        """
+        Calcula a razão de consistência (CR) de uma matriz de comparação.
+        
+        Parâmetros:
+            matriz (list of lists): Matriz de comparação par a par.
+        
+        Retorno:
+            float: Razão de consistência (CR).
+        """
+        # Converte a matriz para um numpy array, se necessário
+        matriz = np.array(matriz)
+        n = matriz.shape[0]  # Obtém o tamanho da matriz
+        
+        pesos = normalizar_matriz(matriz)
+        
+        # Calcula λ_max
+        w_temp = np.dot(matriz, pesos)
+        lambda_max = np.mean(w_temp / pesos)
+        
+        # Índice de consistência (CI)
+        ci = (lambda_max - n) / (n - 1)
+        
+        # Índices de consistência aleatórios (RI) para matrizes de tamanho 1 a 10
+        ri_table = {1: 0.00, 2: 0.00, 3: 0.58, 4: 0.90, 5: 1.12, 6: 1.24, 7: 1.32, 8: 1.41, 9: 1.45, 10: 1.49}
+        ri = ri_table.get(n, 1.49)  # Usa 1.49 como padrão para n > 10
+        
+        # Razão de consistência (CR)
+        cr = ci / ri if ri != 0 else 0
+        return cr
+
 
     # Cria as matrizes de comparação par a par para cada atributo
     n = len(solucoes)
@@ -263,7 +296,8 @@ def ahp_classic(solucoes, matriz_comparacao_atributos):
 
     # Seleciona a solução com maior peso final
     indice_melhor_solucao = np.argmax(pesos_finais_solucoes)
-    return (indice_melhor_solucao, solucoes[indice_melhor_solucao])
+    razao_de_consistencia = calcular_consistencia(matriz_comparacao_atributos)
+    return (indice_melhor_solucao, solucoes[indice_melhor_solucao], razao_de_consistencia)
 
 
 def electre_1(solucoes, pesos_atributos, c_threshold, d_threshold):
@@ -420,9 +454,25 @@ for alternativa in alternativas:
     robustez_indisponibilidade(alternativa, coord_bases, probdata)
     balanco_carga(alternativa, probdata)
 
-atributos_par_a_par = [[1, 3, 5, 1/2], [1/3, 1, 4, 3], [1/5, 1/4, 1, 7], [2, 1/3, 1/7, 1]]
+atributos_par_a_par = [
+    [1, 1/3, 1/5, 3],       # f1_value comparado com os outros atributos
+    [3, 1, 1/3, 5],     # f2_value comparado com os outros atributos
+    [5, 3, 1, 7],   # robustez comparado com os outros atributos
+    [1/3, 1/5, 1/7, 1]  # balanco_sd comparado com os outros atributos
+]
 
-print(ahp_classic(alternativas, atributos_par_a_par)[0])
+'''
+Prioridades:
+1) robustez
+2) f2_value
+3) f1_value
+4) balanco_sd
+'''
+
+decisao_ahp = ahp_classic(alternativas, atributos_par_a_par)
+print("Opcao selecionada pelo AHP: {decisao_ahp[0]}")
+print("Consistencia da matriz de comparacao par a par dos atributos: {decisao_ahp[2]}")
+plot_melhor_solucao(probdata, decisao_ahp[1].solution)
 
 # probdata = probdef_new()
 #     # Carrega as soluções do CSV
