@@ -287,6 +287,7 @@ def ahp_classic(solucoes, matriz_comparacao_atributos):
 
     # Calcula os pesos dos atributos (prioridades) usando a matriz de comparação 4x4 fornecida
     pesos_atributos = normalizar_matriz(matriz_comparacao_atributos)
+    print(f"Pesos dos atributos: {pesos_atributos}")
 
     # Calcula o peso final de cada solução
     pesos_finais_solucoes = np.zeros(n)
@@ -297,7 +298,7 @@ def ahp_classic(solucoes, matriz_comparacao_atributos):
     # Seleciona a solução com maior peso final
     indice_melhor_solucao = np.argmax(pesos_finais_solucoes)
     razao_de_consistencia = calcular_consistencia(matriz_comparacao_atributos)
-    return (indice_melhor_solucao, solucoes[indice_melhor_solucao], razao_de_consistencia)
+    return (indice_melhor_solucao, solucoes[indice_melhor_solucao], razao_de_consistencia, pesos_atributos)
 
 
 def electre_1(solucoes, pesos_atributos, c_threshold, d_threshold):
@@ -455,10 +456,10 @@ for alternativa in alternativas:
     balanco_carga(alternativa, probdata)
 
 atributos_par_a_par = [
-    [1, 5, 7, 3],       # f1_value comparado com os outros atributos
+    [1, 5, 7, 2],       # f1_value comparado com os outros atributos
     [1/5, 1, 3, 1/3],     # f2_value comparado com os outros atributos
     [1/7, 1/3, 1, 1/5],   # robustez comparado com os outros atributos
-    [1/3, 3, 5, 1]  # balanco_sd comparado com os outros atributos
+    [1/2, 3, 5, 1]  # balanco_sd comparado com os outros atributos
 ]
 
 '''
@@ -470,8 +471,8 @@ Prioridades:
 '''
 
 decisao_ahp = ahp_classic(alternativas, atributos_par_a_par)
-print("Opcao selecionada pelo AHP: {decisao_ahp[0]}")
-print("Consistencia da matriz de comparacao par a par dos atributos: {decisao_ahp[2]}")
+print(f"Opcao selecionada pelo AHP: {decisao_ahp[0]}")
+print(f"Consistencia da matriz de comparacao par a par dos atributos: {decisao_ahp[2]}")
 plot_melhor_solucao(probdata, decisao_ahp[1].solution)
 
 # probdata = probdef_new()
