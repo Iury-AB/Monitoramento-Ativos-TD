@@ -280,6 +280,10 @@ def ahp_classic(solucoes, matriz_comparacao_atributos):
 
                 matrizes_atributos[atributo][j, i] = min(round(1 / matrizes_atributos[atributo][i, j], 2), 9)
 
+    for atributo in ['f1_value', 'f2_value', 'robustez', 'balanco_sd']:
+        cons = calcular_consistencia(matrizes_atributos[atributo])
+        print(f"(AHP) Consistencia dos pesos para {atributo}: {cons}")
+
     # Calcula os pesos das soluções em cada atributo
     pesos_solucoes_por_atributo = {}
     for atributo, matriz in matrizes_atributos.items():
@@ -287,7 +291,7 @@ def ahp_classic(solucoes, matriz_comparacao_atributos):
 
     # Calcula os pesos dos atributos (prioridades) usando a matriz de comparação 4x4 fornecida
     pesos_atributos = normalizar_matriz(matriz_comparacao_atributos)
-    print(f"Pesos dos atributos: {pesos_atributos}")
+    print(f"(AHP) Pesos dos atributos: {pesos_atributos}")
 
     # Calcula o peso final de cada solução
     pesos_finais_solucoes = np.zeros(n)
@@ -471,8 +475,8 @@ Prioridades:
 '''
 
 decisao_ahp = ahp_classic(alternativas, atributos_par_a_par)
-print(f"Opcao selecionada pelo AHP: {decisao_ahp[0]}")
-print(f"Consistencia da matriz de comparacao par a par dos atributos: {decisao_ahp[2]}")
+print(f"(AHP) Opcao selecionada: {decisao_ahp[0]}")
+print(f"(AHP) Consistencia da matriz de comparacao par a par dos atributos: {decisao_ahp[2]}")
 plot_melhor_solucao(probdata, decisao_ahp[1].solution)
 
 # probdata = probdef_new()
