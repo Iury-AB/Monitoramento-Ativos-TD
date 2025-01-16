@@ -5,6 +5,7 @@ from geopy.distance import geodesic
 from heurisitcs import fobj_1, fobj_2
 import json
 from plot import plot_melhor_solucao
+from ahp_plot import plotar_tabela_comparacao
 
 
 def ler_solucoes_do_csv(nome_arquivo):
@@ -283,6 +284,7 @@ def ahp_classic(solucoes, matriz_comparacao_atributos):
     for atributo in ['f1_value', 'f2_value', 'robustez', 'balanco_sd']:
         cons = calcular_consistencia(matrizes_atributos[atributo])
         print(f"(AHP) Consistencia dos pesos para {atributo}: {cons}")
+        plotar_tabela_comparacao(matrizes_atributos[atributo], range(8))
 
     # Calcula os pesos das soluções em cada atributo
     pesos_solucoes_por_atributo = {}
