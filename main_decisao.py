@@ -1,10 +1,12 @@
 import numpy as np
+
+from electre_plot import plot_matrix_values
 from problem import probdef_new, Struct
 import pandas as pd
 from geopy.distance import geodesic
 from heurisitcs import fobj_1, fobj_2
 import json
-from plot import plot_melhor_solucao
+from plot import plot_melhor_solucao, plot_solutions_front
 from ahp_plot import plotar_tabela_comparacao
 
 
@@ -98,6 +100,7 @@ def calcular_distancia_bases(coord_base1, coord_base2):
     # Converte as coordenadas em tuplas e calcula a distância geodésica
     distancia = geodesic(coord_base1, coord_base2).kilometers
     return distancia
+
 
 def robustez_indisponibilidade(x, matriz_bases, probdata):
     """
@@ -203,7 +206,7 @@ def ahp_classic(solucoes, matriz_comparacao_atributos):
         matriz_norm = matriz / col_sum
         pesos = np.mean(matriz_norm, axis=1)
         return pesos
-    
+
     def calcular_consistencia(matriz):
         """
         Calcula a razão de consistência (CR) de uma matriz de comparação.
@@ -217,24 +220,23 @@ def ahp_classic(solucoes, matriz_comparacao_atributos):
         # Converte a matriz para um numpy array, se necessário
         matriz = np.array(matriz)
         n = matriz.shape[0]  # Obtém o tamanho da matriz
-        
+
         pesos = normalizar_matriz(matriz)
-        
+
         # Calcula λ_max
         w_temp = np.dot(matriz, pesos)
         lambda_max = np.mean(w_temp / pesos)
-        
+
         # Índice de consistência (CI)
         ci = (lambda_max - n) / (n - 1)
-        
+
         # Índices de consistência aleatórios (RI) para matrizes de tamanho 1 a 10
         ri_table = {1: 0.00, 2: 0.00, 3: 0.58, 4: 0.90, 5: 1.12, 6: 1.24, 7: 1.32, 8: 1.41, 9: 1.45, 10: 1.49}
         ri = ri_table.get(n, 1.49)  # Usa 1.49 como padrão para n > 10
-        
+
         # Razão de consistência (CR)
         cr = ci / ri if ri != 0 else 0
         return cr
-
 
     # Cria as matrizes de comparação par a par para cada atributo
     n = len(solucoes)
@@ -316,9 +318,8 @@ def electre_1(solucoes, pesos_atributos, c_threshold, d_threshold):
     - robustez
     - balanco_sd
 
-    Observação: neste código, assume-se que três atributos (f1, f2, robustez)
-    seguem a lógica "quanto menor, melhor" e um atributo (balanco) segue
-    "quanto maior, melhor". Isso é tratado pelo vetor `sense`.
+    Observação: neste código, assume-se que os quatro atributos (f1, f2, robustez e balanco)
+    seguem a lógica "quanto menor, melhor"
 
     Parâmetros:
     ----------
@@ -355,7 +356,7 @@ def electre_1(solucoes, pesos_atributos, c_threshold, d_threshold):
     # 'sense' indica a forma de interpretar o critério:
     #  1  => "menor é melhor"
     # -1 => "maior é melhor"
-    sense = [1, 1, 1, -1]
+    sense = [1, 1, 1, 1]
 
     # Determina a quantidade de soluções
     n = len(solucoes)
@@ -382,7 +383,7 @@ def electre_1(solucoes, pesos_atributos, c_threshold, d_threshold):
     # Cálculo do min, max e amplitude de cada critério para normalizar diferenças
     min_j = dec_mat.min(axis=0)
     max_j = dec_mat.max(axis=0)
-    range_j = max_j - min_j + 1e-9  # Evita divisão por zero no cálculo de discordância
+    range_j = max_j - min_j
 
     # Preenche as matrizes de concordância e discordância
     for i in range(n):
@@ -448,12 +449,39 @@ def electre_1(solucoes, pesos_atributos, c_threshold, d_threshold):
         if not eliminated:
             survivors.append(i)
 
+            # --------------------------
+            # PLOTANDO AS MATRIZES
+            # --------------------------
+
+            plot_matrix_values(dec_mat,
+                               title="Matriz de Performance (dec_mat)",
+                               x_label="Critérios",
+                               y_label="Soluções",
+                               fmt=".3f")
+            plot_matrix_values(concordance,
+                               title="Matriz de Concordância",
+                               x_label="Solução j",
+                               y_label="Solução i",
+                               fmt=".3f")
+
+            plot_matrix_values(discordance,
+                               title="Matriz de Discordância",
+                               x_label="Solução j",
+                               y_label="Solução i",
+                               fmt=".3f")
+
+            plot_matrix_values(outranking,
+                               title="Matriz de Sobreclassificação (0 ou 1)",
+                               x_label="Solução j",
+                               y_label="Solução i",
+                               fmt=".0f")  # se for só 0 ou 1
+
     return outranking, survivors
 
 
 probdata = probdef_new()
 
-#vetor de alternativas a serem usadas no metodo de decisao
+# vetor de alternativas a serem usadas no metodo de decisao
 alternativas = ler_solucoes_do_csv("solucoes.csv")
 coord_bases = construir_matriz_bases("probdata.csv")
 
@@ -462,10 +490,10 @@ for alternativa in alternativas:
     balanco_carga(alternativa, probdata)
 
 atributos_par_a_par = [
-    [1, 5, 7, 2],       # f1_value comparado com os outros atributos
-    [1/5, 1, 3, 1/3],     # f2_value comparado com os outros atributos
-    [1/7, 1/3, 1, 1/5],   # robustez comparado com os outros atributos
-    [1/2, 3, 5, 1]  # balanco_sd comparado com os outros atributos
+    [1, 5, 7, 2],  # f1_value comparado com os outros atributos
+    [1 / 5, 1, 3, 1 / 3],  # f2_value comparado com os outros atributos
+    [1 / 7, 1 / 3, 1, 1 / 5],  # robustez comparado com os outros atributos
+    [1 / 2, 3, 5, 1]  # balanco_sd comparado com os outros atributos
 ]
 
 '''
@@ -480,60 +508,44 @@ decisao_ahp = ahp_classic(alternativas, atributos_par_a_par)
 print(f"(AHP) Opcao selecionada: {decisao_ahp[0]}")
 print(f"(AHP) Consistencia da matriz de comparacao par a par dos atributos: {decisao_ahp[2]}")
 plot_melhor_solucao(probdata, decisao_ahp[1].solution)
+best_ahp_idx = decisao_ahp[0]
+best_ahp_sol = decisao_ahp[1]
 
-# probdata = probdef_new()
-#     # Carrega as soluções do CSV
-#     alternativas = ler_solucoes_do_csv("solucoes.csv")
-#
-#     # Constrói a matriz de bases (para robustez)
-#     coord_bases = construir_matriz_bases("probdata.csv")
-#
-#     # Calcula robustez e balanco para cada solução
-#     for alt in alternativas:
-#         robustez_indisponibilidade(alt, coord_bases, probdata)
-#         balanco_carga(alt, probdata)
-#
-#     # =========================
-#     # A) APLICAÇÃO DO AHP
-#     # =========================
-#     atributos_par_a_par = [
-#         [1,   3,    5,    0.5],
-#         [1/3, 1,    4,    3],
-#         [1/5, 1/4,  1,    7],
-#         [2,   1/3,  1/7,  1]
-#     ]
-#     best_index_ahp, best_sol_ahp = ahp_classic(alternativas, atributos_par_a_par)
-#     print(f"\n[RESULTADO AHP] Melhor solução (índice={best_index_ahp}):")
-#     print(f"   f1={best_sol_ahp.f1_value:.3f}, f2={best_sol_ahp.f2_value:.3f}, "
-#           f"robustez={best_sol_ahp.robustez:.3f}, balanco={best_sol_ahp.balanco_sd:.3f}")
-#
-#     # =========================
-#     # B) APLICAÇÃO DO ELECTRE I
-#     # =========================
-#     # Exemplo de pesos => [f1, f2, robustez, balanco]
-#     # Ajuste conforme preferência.
-#     pesos_electre = [0.25, 0.25, 0.25, 0.25]
-#     c_threshold = 0.6
-#     d_threshold = 0.3
-#     outranking, survivors = electre_1(alternativas, pesos_electre, c_threshold, d_threshold)
-#
-#     print(f"\n[RESULTADO ELECTRE I]")
-#     print(f"  Limiar de Concordância={c_threshold}, Limiar de Discordância={d_threshold}")
-#     print("  Survivors (índices) =", survivors)
-#     for idx in survivors:
-#         s = alternativas[idx]
-#         print(f"   -> idx={idx}, f1={s.f1_value:.3f}, f2={s.f2_value:.3f}, "
-#               f"robustez={s.robustez:.3f}, balanco={s.balanco_sd:.3f}")
-#
-#     # =========================
-#     # COMPARAÇÃO FINAL
-#     # =========================
-#     # Exemplo: se a melhor do AHP não está nos survivors do ELECTRE I,
-#     # pode definir um critério adicional ou apenas exibir.
-#     if best_index_ahp not in survivors:
-#         print("\n>>> AHP e ELECTRE I divergiram. AHP escolheu uma solução que foi eliminada no ELECTRE.")
-#         print("    Você pode definir um critério extra para desempate, ou forçar a escolha do AHP.")
-#     else:
-#         print("\n>>> AHP e ELECTRE I são coerentes: a solução do AHP também sobreviveu no ELECTRE I.")
-#
-#     print("\n*** FIM DA EXECUÇÃO ENTREGA 3 ***")
+# Exemplo: Pesos fixos (conforme indicado)
+# f1_value=0.52047192, f2_value=0.1243774, robustez=0.05808436, balanco_sd=0.29706632
+pesos_electre = [0.52047192, 0.1243774, 0.05808436, 0.29706632]
+
+# Limiar de concordância e discordância
+c_threshold = 0.75
+d_threshold = 0.25
+
+# Aplica ELECTRE I, plotando as matrizes e retornando outranking e survivors
+outranking_mat, survivors = electre_1(
+    solucoes=alternativas,
+    pesos_atributos=pesos_electre,
+    c_threshold=c_threshold,
+    d_threshold=d_threshold
+)
+
+print("Matriz outranking:\n", outranking_mat)
+print("Soluções survivors:", survivors)
+for idx in survivors:
+    print(f"Plotando survivor do ELECTRE no idx={idx}")
+    sol = alternativas[idx]
+    plot_melhor_solucao(probdata, sol.solution)
+
+print("\n=== COMPARANDO AHP x ELECTRE I ===")
+if best_ahp_idx in survivors:
+    print("A melhor solução do AHP também está entre as sobreviventes do ELECTRE I.")
+else:
+    print("A melhor solução do AHP NÃO está entre as sobreviventes do ELECTRE I (divergência).")
+
+
+plot_solutions_front(
+    solucoes=alternativas,
+    idx_ahp=best_ahp_idx,
+    survivors=survivors,
+    titulo="Fronteira de Soluções Avaliadas (AHP x ELECTRE)"
+)
+
+

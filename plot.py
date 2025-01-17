@@ -38,3 +38,52 @@ def plot_melhor_solucao(probdata, solucao):
     plt.legend()
     plt.grid(True)
     plt.show()
+
+def plot_solutions_front(solucoes, idx_ahp, survivors, titulo="Fronteira de Soluções"):
+    """
+    Plota as soluções no plano (f1_value, f2_value),
+    destacando a melhor do AHP e as survivors do ELECTRE.
+
+    Parâmetros
+    ----------
+    solucoes : list
+        Lista de objetos (Struct) com atributos f1_value, f2_value etc.
+    idx_ahp : int
+        Índice da solução escolhida pelo AHP.
+    survivors : list of int
+        Índices das soluções sobreviventes do ELECTRE I.
+    titulo : str
+        Título do gráfico.
+    """
+    plt.figure(figsize=(8,6))
+    # Monta arrays de f1 e f2
+    f1_vals = [sol.f1_value for sol in solucoes]
+    f2_vals = [sol.f2_value for sol in solucoes]
+
+    # Faz scatter de todas as soluções
+    # Começamos assumindo que nenhuma é destaque
+    plt.scatter(f1_vals, f2_vals, c='gray', marker='o', label='Demais Soluções', alpha=0.6)
+
+    # Destacar as survivors do ELECTRE (em triângulos)
+    electre_f1 = [f1_vals[i] for i in survivors]
+    electre_f2 = [f2_vals[i] for i in survivors]
+    plt.scatter(electre_f1, electre_f2, c='blue', marker='^',
+                s=80, label='Survivors ELECTRE', alpha=0.9)
+
+    # Destacar a melhor do AHP (em formato estrela)
+    ahp_f1 = f1_vals[idx_ahp]
+    ahp_f2 = f2_vals[idx_ahp]
+    # Se a melhor do AHP também estiver em survivors, escolhemos outra cor/forma para isso
+    if idx_ahp in survivors:
+        plt.scatter(ahp_f1, ahp_f2, c='red', marker='*',
+                    s=200, label='Melhor AHP (também survivor)', alpha=1.0)
+    else:
+        plt.scatter(ahp_f1, ahp_f2, c='red', marker='*',
+                    s=200, label='Melhor AHP (fora survivors)', alpha=1.0)
+
+    plt.title(titulo)
+    plt.xlabel('f1_value (distância total)')
+    plt.ylabel('f2_value (risco esperado)')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
